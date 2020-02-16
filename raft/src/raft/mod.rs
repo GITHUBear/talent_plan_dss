@@ -1,7 +1,21 @@
-use std::sync::mpsc::{sync_channel, Receiver};
-use std::sync::Arc;
+use std::{
+    sync::{
+        atomic::{AtomicBool, AtomicU64, Ordering},
+        mpsc::{sync_channel, Receiver},
+        Arc,
+    },
+    time::Duration,
+};
 
-use futures::sync::mpsc::UnboundedSender;
+use futures::prelude::*;
+use futures::sync::{
+    mpsc::{UnboundedReceiver, UnboundedSender},
+    oneshot::Sender as TX,
+};
+use futures::{Future, Stream};
+
+use rand::Rng;
+
 use labrpc::RpcFuture;
 
 #[cfg(test)]
@@ -14,6 +28,11 @@ mod tests;
 use self::errors::*;
 use self::persister::*;
 use crate::proto::raftpb::*;
+use futures_timer::Delay;
+
+const ELECTION_TIMEOUT_START: u64 = 150;
+const ELECTION_TIMEOUT_END: u64 = 300;
+const HEARTBEAT_TIMEOUT: u64 = 100;
 
 pub struct ApplyMsg {
     pub command_valid: bool,
@@ -39,6 +58,12 @@ impl State {
     }
 }
 
+pub enum Role {
+    Follower,
+    Candidate,
+    Leader,
+}
+
 // A single Raft peer.
 pub struct Raft {
     // RPC end points of all peers
@@ -47,10 +72,14 @@ pub struct Raft {
     persister: Box<dyn Persister>,
     // this peer's index into peers[]
     me: usize,
-    state: Arc<State>,
+    //    state: Arc<State>,
     // Your data here (2A, 2B, 2C).
     // Look at the paper's Figure 2 for a description of what
     // state a Raft server must maintain.
+    role: Role,             // the role of a node
+    voted_for: Option<u64>, // candidateId that received vote in current term
+    current_term: Arc<AtomicU64>,
+    is_leader: Arc<AtomicBool>,
 }
 
 impl Raft {
@@ -66,7 +95,7 @@ impl Raft {
         peers: Vec<RaftClient>,
         me: usize,
         persister: Box<dyn Persister>,
-        apply_ch: UnboundedSender<ApplyMsg>,
+        _apply_ch: UnboundedSender<ApplyMsg>,
     ) -> Raft {
         let raft_state = persister.raft_state();
 
@@ -75,13 +104,19 @@ impl Raft {
             peers,
             persister,
             me,
-            state: Arc::default(),
+            //            state: Arc::default(),
+            role: Role::Follower,
+            voted_for: None,
+
+            current_term: Arc::new(AtomicU64::new(0)),
+            is_leader: Arc::new(AtomicBool::new(false)),
         };
 
         // initialize from state persisted before a crash
         rf.restore(&raft_state);
 
-        crate::your_code_here((rf, apply_ch))
+        rf
+        //        crate::your_code_here((rf, apply_ch))
     }
 
     /// save Raft's persistent state to stable storage,
@@ -152,7 +187,17 @@ impl Raft {
         // rx
         // ```
         let (tx, rx) = sync_channel::<Result<RequestVoteReply>>(1);
-        crate::your_code_here((server, args, tx, rx))
+        //        crate::your_code_here((server, args, tx, rx))
+        let peer = &self.peers[server];
+        peer.spawn(
+            peer.request_vote(args)
+                .map_err(Error::Rpc)
+                .then(move |res| {
+                    tx.send(res);
+                    Ok(())
+                }),
+        );
+        rx
     }
 
     fn start<M>(&self, command: &M) -> Result<(u64, u64)>
@@ -175,16 +220,183 @@ impl Raft {
 }
 
 impl Raft {
-    /// Only for suppressing deadcode warnings.
-    #[doc(hidden)]
-    pub fn __suppress_deadcode(&mut self) {
-        let _ = self.start(&0);
-        let _ = self.send_request_vote(0, &Default::default());
-        self.persist();
-        let _ = &self.state;
-        let _ = &self.me;
-        let _ = &self.persister;
-        let _ = &self.peers;
+    fn be_follower(&mut self) {
+        self.role = Role::Follower;
+        self.is_leader.store(false, Ordering::SeqCst);
+    }
+
+    fn be_candidate(&mut self) {
+        self.role = Role::Candidate;
+        self.is_leader.store(false, Ordering::SeqCst);
+        self.current_term.fetch_add(1, Ordering::SeqCst);
+        self.voted_for = Some(self.me as u64);
+    }
+
+    /// 处理 RPC RequestVote 请求, 返回 Reply
+    fn handle_request_vote(&mut self, args: RequestVoteArgs) -> RequestVoteReply {
+        // RequestVoteArgs { term, candidate_id }
+        let term = self.current_term.load(Ordering::SeqCst);
+        let vote_granted = if args.term > term {
+            // 只要发现请求者的 term 比自己大就都同意投票
+            self.current_term.store(args.term, Ordering::SeqCst);
+            true
+        } else if args.term < term {
+            // 只要发现请求者的 term 比自己小就都拒绝投票
+            false
+        } else {
+            // 在本任期已经投给过了请求者, 依然同意投票
+            match self.voted_for {
+                Some(peer) => peer == args.candidate_id,
+                None => true,
+            }
+        };
+
+        if vote_granted {
+            // 同意投票, 更新 voted_for
+            self.voted_for = Some(args.candidate_id);
+        }
+
+        RequestVoteReply { term, vote_granted }
+    }
+
+    /// 处理 RPC AppendEntries 请求, 返回 Reply
+    fn handle_append_entries(&mut self, args: AppendEntriesArgs) -> AppendEntriesReply {
+        // AppendEntriesArgs { term, leader_id }
+        let term = self.current_term.load(Ordering::SeqCst);
+        let success = if args.term > term {
+            // 只要发现请求者的 term 比自己大就返回true
+            self.current_term.store(args.term, Ordering::SeqCst);
+            true
+        } else if args.term < term {
+            // 只要发现请求者的 term 比自己小就返回false
+            false
+        } else {
+            true
+        };
+
+        AppendEntriesReply { term, success }
+    }
+
+    /// 向所有 peers 发送投票请求
+    fn send_request_vote_all(&self) {
+        let term = self.current_term.load(Ordering::SeqCst);
+        let _args = RequestVoteArgs {
+            term,
+            candidate_id: self.me as u64,
+        };
+    }
+}
+
+/// 定义状态机事件
+enum Event {
+    Timeout(TimeoutEv),
+    Action(ActionEv),
+}
+
+enum TimeoutEv {
+    Election,
+    Heartbeat,
+}
+
+enum ActionEv {
+    RequestVote(RequestVoteArgs, TX<RequestVoteReply>),
+    AppendEntries(AppendEntriesArgs, TX<AppendEntriesReply>),
+    Kill,
+}
+
+struct StateFuture {
+    raft: Raft,
+    timeout: Delay,
+    timeout_ev: TimeoutEv,
+    action_rx: UnboundedReceiver<ActionEv>,
+}
+
+impl StateFuture {
+    fn rand_election_timeout() -> Duration {
+        let rand_timeout =
+            rand::thread_rng().gen_range(ELECTION_TIMEOUT_START, ELECTION_TIMEOUT_END);
+        Duration::from_millis(rand_timeout)
+    }
+}
+
+impl Stream for StateFuture {
+    type Item = ();
+    type Error = ();
+
+    fn poll(&mut self) -> Poll<Option<()>, ()> {
+        match self.action_rx.poll() {
+            Ok(Async::Ready(Some(ev))) => {
+                match ev {
+                    ActionEv::RequestVote(args, tx) => {
+                        // 调用 Raft::handle_request_vote, 返回 reply
+                        // 将 reply 通过 tx 发送
+                        debug!("[StateFuture] get RequestVote event");
+                        let reply = self.raft.handle_request_vote(args);
+                        let vote_granted = reply.vote_granted;
+                        tx.send(reply).unwrap_or_else(|_| {
+                            error!("[StateFuture] send RequestVoteReply error")
+                        });
+                        if vote_granted {
+                            // 投票标记为真, 改变 raft 状态为 follower
+                            self.raft.be_follower();
+                            // 重置超时时间, 设置下次超时执行选举
+                            self.timeout.reset(StateFuture::rand_election_timeout());
+                            self.timeout_ev = TimeoutEv::Election;
+                        }
+                    }
+                    ActionEv::AppendEntries(args, tx) => {
+                        // 调用 Raft::handle_append_entries, 返回 reply
+                        debug!("[StateFuture] get AppendEntries event");
+                        let reply = self.raft.handle_append_entries(args);
+                        let success = reply.success;
+                        tx.send(reply).unwrap_or_else(|_| {
+                            error!("[StateFuture] send AppendEntriesReply error")
+                        });
+                        if success {
+                            // 投票标记为真, 改变 raft 状态为 follower
+                            self.raft.be_follower();
+                            // 重置超时时间, 设置下次超时执行选举
+                            self.timeout.reset(StateFuture::rand_election_timeout());
+                            self.timeout_ev = TimeoutEv::Election;
+                        }
+                    }
+                    ActionEv::Kill => {
+                        // Stream 完成
+                        debug!("[StateFuture] killed");
+                        return Ok(Async::Ready(None));
+                    }
+                }
+            }
+            Ok(Async::Ready(None)) => {
+                // Stream 完成
+                return Ok(Async::Ready(None));
+            }
+            Ok(Async::NotReady) => {}
+            Err(()) => unreachable!(),
+        }
+
+        match self.timeout.poll() {
+            Ok(Async::Ready(())) => {
+                match self.timeout_ev {
+                    TimeoutEv::Election => {
+                        debug!("[StateFuture] Election Timeout");
+                        // 改变 raft 状态为 candidate
+                        // 重置超时时间, 设置下次超时执行选举
+                        self.timeout.reset(StateFuture::rand_election_timeout());
+                        self.timeout_ev = TimeoutEv::Election;
+                    }
+                    TimeoutEv::Heartbeat => {
+                        debug!("[StateFuture] Heartbeat Timeout");
+                    }
+                }
+            }
+            Ok(Async::NotReady) => {
+                return Ok(Async::NotReady);
+            }
+            Err(_e) => {}
+        }
+
+        Ok(Async::Ready(Some(())))
     }
 }
 
@@ -205,6 +417,8 @@ impl Raft {
 #[derive(Clone)]
 pub struct Node {
     // Your code here.
+    request_vote_call: UnboundedSender<()>,
+    append_entries_call: UnboundedSender<()>,
 }
 
 impl Node {
@@ -277,7 +491,17 @@ impl RaftService for Node {
     // example RequestVote RPC handler.
     //
     // CAVEATS: Please avoid locking or sleeping here, it may jam the network.
-    fn request_vote(&self, args: RequestVoteArgs) -> RpcFuture<RequestVoteReply> {
+    fn request_vote(&self, _args: RequestVoteArgs) -> RpcFuture<RequestVoteReply> {
+        // Your code here (2A, 2B).
+        //        crate::your_code_here(args)
+        let reply = RequestVoteReply {
+            term: 0,
+            vote_granted: false,
+        };
+        Box::new(futures::future::ok(reply))
+    }
+
+    fn append_entries(&self, args: AppendEntriesArgs) -> RpcFuture<AppendEntriesReply> {
         // Your code here (2A, 2B).
         crate::your_code_here(args)
     }

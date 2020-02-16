@@ -3,7 +3,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
-use labrpc;
+//use labrpc;
 
 use crate::kvraft::errors::{Error, Result};
 use crate::kvraft::{client, server};

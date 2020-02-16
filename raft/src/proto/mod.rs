@@ -6,7 +6,7 @@ pub mod raftpb {
             rpc request_vote(RequestVoteArgs) returns (RequestVoteReply);
 
             // Your code here if more rpc desired.
-            // rpc xxx(yyy) returns (zzz)
+            rpc append_entries(AppendEntriesArgs) returns (AppendEntriesReply);
         }
     }
     pub use self::raft::{
