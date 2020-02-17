@@ -29,6 +29,7 @@ use self::errors::*;
 use self::persister::*;
 use crate::proto::raftpb::*;
 use futures_timer::Delay;
+use futures::future::{err, ok};
 
 const ELECTION_TIMEOUT_START: u64 = 150;
 const ELECTION_TIMEOUT_END: u64 = 300;
@@ -280,27 +281,77 @@ impl Raft {
     /// 向所有 peers 发送投票请求
     fn send_request_vote_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
-        let _args = RequestVoteArgs {
+        let args = RequestVoteArgs {
             term,
             candidate_id: self.me as u64,
         };
+
+        let me = self.me;
+        // RequestVote Reply 的接收端
+        let result_rxs: Vec<Receiver<Result<RequestVoteReply>>> =
+            self.peers
+            .iter()
+            .enumerate()
+            .filter(|(&id, _)| {
+                // 筛除自己
+                id != me
+            })
+            .map(|(id, _)| {
+                self.send_request_vote(id, &args)
+            })
+            .collect();
+
+        // 初始化为1, 默认投自己一票
+        let vote_cnt = 1 as usize;
+        let group_num = self.peers.len();
+        let recv_fut =
+            futures::stream::iter_ok::<_, ()>(result_rxs)
+            .for_each(|rx| {
+                let res = rx.recv().unwrap_or_else(|e| {
+                    error!("[send_request_vote_all{}] receive error: {}", me, e);
+                });
+                // 由于虚拟网络的干扰会出现 Err, 忽略掉 Err 的 Reply
+                if let Some(reply) = res {
+                    debug!("[send_request_vote_all{}] get vote reply: {:?}", me, reply);
+                    if reply.vote_granted {
+                        vote_cnt += 1;
+                    }
+                    if vote_cnt * 2 > group_num {
+                        // 超过半数投给了自己
+                        /// TODO: 发送 SuccessElection 给 StateFuture
+                    }
+                }
+                ok(())
+            });
+
+        tokio::spawn(recv_fut);
     }
 }
 
 /// 定义状态机事件
 enum Event {
+    /// 超时事件
     Timeout(TimeoutEv),
+    /// 需要 raft 进行交互处理的事件
     Action(ActionEv),
 }
 
 enum TimeoutEv {
+    /// 选举超时
     Election,
+    /// 心跳超时
     Heartbeat,
 }
 
 enum ActionEv {
+    /// 节点接收到来自其他节点的 RequestVote RPC
+    /// 使用 oneshot 一次性管道发送结果到异步等待的接收端
     RequestVote(RequestVoteArgs, TX<RequestVoteReply>),
+    /// 节点接收到来自其他节点的 AppendEntries RPC
     AppendEntries(AppendEntriesArgs, TX<AppendEntriesReply>),
+    /// 在一次选举当中获胜 包含获胜任期
+    SuccessElection(u64),
+    /// 关闭状态机
     Kill,
 }
 
@@ -366,9 +417,10 @@ impl Stream for StateFuture {
                         return Ok(Async::Ready(None));
                     }
                 }
+                return Ok(Async::Ready(Some(())));
             }
             Ok(Async::Ready(None)) => {
-                // Stream 完成
+                // action发送端关闭，表示 Stream 完成
                 return Ok(Async::Ready(None));
             }
             Ok(Async::NotReady) => {}
@@ -389,14 +441,15 @@ impl Stream for StateFuture {
                         debug!("[StateFuture] Heartbeat Timeout");
                     }
                 }
+                return Ok(Async::Ready(Some(())));
             }
-            Ok(Async::NotReady) => {
-                return Ok(Async::NotReady);
+            Ok(Async::NotReady) => {}
+            Err(e) => {
+                error!("[StateFuture] timeout channel error: {}", e);
             }
-            Err(_e) => {}
         }
 
-        Ok(Async::Ready(Some(())))
+        Ok(Async::NotReady)
     }
 }
 
