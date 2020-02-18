@@ -459,12 +459,21 @@ enum ActionEv {
     AppendEntries(AppendEntriesArgs, Sender<AppendEntriesReply>),
     /// 在一次选举当中获胜 包含获胜任期
     SuccessElection(u64),
-    /// 在一次选举当中失败 包含失败任期
+    /// 在一次选举当中失败 包含导致失败的发送者任期
     Fail(u64),
     /// 关闭状态机
     Kill,
 }
 
+/// `StateFuture` 实现 `Stream` Trait
+/// 在执行者的推动下，将完成异步状态机的功能
+/// `StateFuture` 将 timeout 和 其他节点的 RPC 等事件都视为 `Future`
+/// `StateFuture` 异步地等待事件的到达，根据事件相应地改变 Raft 状态
+///
+/// 所以 `StateFuture` 包含了对 `Raft` 的所有权
+/// RPC 事件异步接收者包含在 `Raft` 结构中
+/// timeout 事件则由内部 `Delay` 实现
+/// timeout_ev 表示超时事件
 struct StateFuture {
     raft: Raft,
     timeout: Delay,
@@ -479,6 +488,7 @@ impl StateFuture {
             timeout_ev: TimeoutEv::Election,
         }
     }
+
     fn rand_election_timeout() -> Duration {
         let rand_timeout =
             rand::thread_rng().gen_range(ELECTION_TIMEOUT_START, ELECTION_TIMEOUT_END);
@@ -617,6 +627,9 @@ impl Stream for StateFuture {
 // ```rust
 // struct Node { sender: Sender<Msg> }
 // ```
+/// state_machine 将 `StateFuture` 异步状态机放到一个独立线程运行
+/// current_term 和 is_leader 共享 Raft 中对应成员的所有权 (为了 term 和 is_leader 方法)
+/// msg_tx 从 Raft 结构中对应成员 clone 得到，用于捕获 RPC 调用，发送消息到 `StateFuture`
 #[derive(Clone)]
 pub struct Node {
     // Your code here.
