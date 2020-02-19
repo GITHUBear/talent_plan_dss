@@ -82,9 +82,9 @@ pub struct Raft {
     is_leader: Arc<AtomicBool>,
 
     // 以下三项在服务器上持久存在
-    voted_for: Option<u64>,        // candidateId that received vote in current term
+    voted_for: Option<u64>, // candidateId that received vote in current term
     current_term: Arc<AtomicU64>,
-    logs: Vec<Log>,                // 每一个 log 包含指令和该指令关联的任期号
+    logs: Vec<Log>, // 每一个 log 包含指令和该指令关联的任期号
 
     // 以下两项在服务器上经常变化
     commit_index: usize,
@@ -116,6 +116,7 @@ impl Raft {
         let raft_state = persister.raft_state();
         let (tx, rx) = unbounded::<ActionEv>();
         // Your initialization code here (2A, 2B, 2C).
+        let group_num = peers.len();
         let mut rf = Raft {
             peers,
             persister,
@@ -126,6 +127,19 @@ impl Raft {
 
             current_term: Arc::new(AtomicU64::new(1)),
             is_leader: Arc::new(AtomicBool::new(false)),
+
+            // 添加一个 dummy log
+            logs: vec![Log {
+                term: 0,
+                index: 0,
+                command: vec![],
+            }],
+
+            commit_index: 0,
+            last_applied: 0,
+
+            next_index: vec![0; group_num],
+            match_index: vec![0; group_num],
 
             msg_tx: tx,
             msg_rx: rx,
@@ -262,14 +276,13 @@ impl Raft {
 }
 
 impl Raft {
-    /// 判断 RPC Caller 的日志集是否比本节点的旧，旧返回 true，反之 false (包括一样新)
+    /// 判断 RequestVote RPC Caller 的日志集是否比本节点的旧，旧返回 true，反之 false (包括一样新)
     /// args_last_term 是 Caller 最后一项日志的 term
     /// args_last_index 是 Caller 最后一项日志的 index
     fn is_newer(&self, args_last_term: u64, args_last_index: u64) -> bool {
-        let (self_last_term, self_last_index) = match self.logs.last() {
-            Some(log) => (log.term, log.index),
-            None => (0, 0),
-        };
+        // 初始化时添加了一个 dummy log，可以直接 unwrap
+        let log = self.logs.last().unwrap();
+        let (self_last_term, self_last_index) = (log.term, log.index);
 
         if self_last_term == args_last_term {
             // term 相同，比较长度
@@ -277,6 +290,23 @@ impl Raft {
         } else {
             // 比较 term
             self_last_term > args_last_term
+        }
+    }
+
+    /// 判断 AppendEntries RPC Caller 的 prev log 是否和当前节点匹配
+    /// 匹配返回 true，反之返回 false
+    /// args_prev_term 是 Caller 希望匹配的日志 term
+    /// args_prev_index 是 Caller 希望匹配的日志 index
+    fn is_match(&self, args_prev_term: u64, args_prev_index: u64) -> bool {
+        match self.logs.get(args_prev_index) {
+            Some(log) => {
+                assert_eq!(log.index, args_prev_index);
+                log.term == args_prev_term
+            }
+            None => {
+                // 说明请求者的 log数量 比本节点的 log 多
+                false
+            }
         }
     }
 
@@ -295,13 +325,20 @@ impl Raft {
     }
 
     fn be_leader(&mut self) {
-
+        // 2B: 添加 next_index 和 match_index 的初始化
+        let log_len = self.logs.len();
+        for index in self.next_index.iter_mut() {
+            *index = log_len;
+        }
+        for index in self.match_index.iter_mut() {
+            *index = 0;
+        }
         self.is_leader.store(true, Ordering::SeqCst);
         self.role = Role::Leader;
     }
 
-    /// 处理 RPC RequestVote 请求, 返回 Reply
-    fn handle_request_vote(&mut self, args: RequestVoteArgs) -> RequestVoteReply {
+    /// 处理 RPC RequestVote 请求, 返回 Reply 和一个bool值表示 args.term 是否大于 term
+    fn handle_request_vote(&mut self, args: RequestVoteArgs) -> (RequestVoteReply, bool) {
         // RequestVoteArgs { term, candidate_id }
         let term = self.current_term.load(Ordering::SeqCst);
 
@@ -314,58 +351,98 @@ impl Raft {
             self.current_term.store(args.term, Ordering::SeqCst);
         }
 
-        let vote_granted = if args.term < term ||
-            self.is_newer(args.last_log_term, args.last_log_index) {
-            // 只要发现请求者的 term 比自己小就都拒绝投票
-            // 只要发现请求者的日志比自己的旧就拒绝投票
-            false
-        } else if args.term > term {
-            // 请求者的日志比自己的新且term大
-            true
-        } else {
-            // 在本任期已经投给过了请求者, 依然同意投票
-            match self.voted_for {
-                Some(peer) => peer == args.candidate_id,
-                None => true,
-            }
-        };
+        let vote_granted =
+            if args.term < term || self.is_newer(args.last_log_term, args.last_log_index) {
+                // 只要发现请求者的 term 比自己小就都拒绝投票
+                // 只要发现请求者的日志比自己的旧就拒绝投票
+                false
+            } else if args.term > term {
+                // 请求者的日志比自己的新且term大
+                true
+            } else {
+                // 在本任期已经投给过了请求者, 依然同意投票
+                match self.voted_for {
+                    Some(peer) => peer == args.candidate_id,
+                    None => true,
+                }
+            };
 
         if vote_granted {
             // 同意投票, 更新 voted_for
             self.voted_for = Some(args.candidate_id);
         }
 
-        RequestVoteReply { term, vote_granted }
+        (RequestVoteReply { term, vote_granted }, args.term > term)
     }
 
     /// 处理 RPC AppendEntries 请求, 返回 Reply
-    fn handle_append_entries(&mut self, args: AppendEntriesArgs) -> AppendEntriesReply {
+    fn handle_append_entries(&mut self, args: AppendEntriesArgs) -> (AppendEntriesReply, bool) {
         // AppendEntriesArgs { term, leader_id }
+        let prev_index = args.prev_log_index;
+        let prev_term = args.prev_log_term;
         let term = self.current_term.load(Ordering::SeqCst);
-        let success = if args.term > term {
-            // 只要发现请求者的 term 比自己大就返回true
-            self.current_term.store(args.term, Ordering::SeqCst);
-            true
-        } else {
-            // 只要发现请求者的 term 比自己小就返回false
-            args.term >= term
-        };
 
-        AppendEntriesReply { term, success }
+        if args.term > term {
+            self.current_term.store(args.term, Ordering::SeqCst);
+        }
+
+        let log_match = self.is_match(prev_term, prev_index);
+        let success = !(args.term < term || !log_match);
+        if success && !args.entries.is_empty() {
+            // 匹配 且 entries 不为空
+            // 这里没有再搜索冲突位置，直接截取 prev_index + 1 长度的 log
+            self.logs.truncate(prev_index + 1);
+            self.logs.append(&mut args.entries);
+        }
+
+        if log_match {
+            (
+                AppendEntriesReply {
+                    term,
+                    success,
+                    conflict_index: 0,
+                    conflict_term: 0,
+                },
+                args.term > term,
+            )
+        } else {
+            let (conflict_index, conflict_term) = match self.logs.get(prev_index) {
+                Some(log) => {
+                    // 越过所有那个任期冲突的所有日志条目,找到该任期最早的日志索引
+                    let mut index = prev_index;
+                    for i in (0..=prev_index).rev() {
+                        if self.logs[i].term != log.term {
+                            index = i + 1;
+                        }
+                    }
+                    (index, log.term)
+                }
+                None => {
+                    // 说明请求者的 log数量 比本节点的 log 多
+                    (self.logs.len() as u64, 0)
+                }
+            };
+            (
+                AppendEntriesReply {
+                    term,
+                    success,
+                    conflict_index: 0,
+                    conflict_term: 0,
+                },
+                args.term > term,
+            )
+        }
     }
 
     /// 向所有 peers 发送投票请求
     fn send_request_vote_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
-        let (last_log_term, last_log_index) = match self.logs.last() {
-            Some(log) => (log.term, log.index),
-            None => (0, 0),
-        };
+        let log = self.logs.last().unwrap();
         let args = RequestVoteArgs {
             term,
             candidate_id: self.me as u64,
-            last_log_index,
-            last_log_term,
+            last_log_index: log.index,
+            last_log_term: log.term,
         };
 
         let me = self.me;
@@ -559,12 +636,13 @@ impl Stream for StateFuture {
                         // 调用 Raft::handle_request_vote, 返回 reply
                         // 将 reply 通过 tx 发送
                         info!("[StateFuture {}] get RequestVote event", self.raft.me);
-                        let reply = self.raft.handle_request_vote(args);
-                        let vote_granted = reply.vote_granted;
+                        let (reply, args_term_gtr) = self.raft.handle_request_vote(args);
                         tx.send(reply).unwrap_or_else(|_| {
                             error!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
                         });
-                        if vote_granted {
+                        // 2B: 现在 vote_granted 就不能完全表示 args.term > term 的情况了
+                        // 故修改 handle_request_vote 的接口
+                        if args_term_gtr {
                             // 投票标记为真, 改变 raft 状态为 follower
                             self.raft.be_follower();
                             // 重置超时时间, 设置下次超时执行选举
