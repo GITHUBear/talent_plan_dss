@@ -493,6 +493,7 @@ impl Raft {
                         }
                     } else {
                         // 不同意投票，查看回应的 term
+                        // 不同意原因1：reply.term > term
                         if reply.term > term {
                             // 向状态机发送 FailElection 消息
                             tx.unbounded_send(ActionEv::Fail(reply.term))
@@ -506,6 +507,7 @@ impl Raft {
                             // stream 完成
                             ok(false)
                         } else {
+                            // 不同意原因2：本节点的日志不够新
                             ok(true)
                         }
                     }
@@ -653,15 +655,14 @@ impl Stream for StateFuture {
                     ActionEv::AppendEntries(args, tx) => {
                         // 调用 Raft::handle_append_entries, 返回 reply
                         info!("[StateFuture {}] get AppendEntries event", self.raft.me);
-                        let reply = self.raft.handle_append_entries(args);
-                        let success = reply.success;
+                        let (reply, args_term_gtr) = self.raft.handle_append_entries(args);
                         tx.send(reply).unwrap_or_else(|_| {
                             error!(
                                 "[StateFuture {}] send AppendEntriesReply error",
                                 self.raft.me
                             );
                         });
-                        if success {
+                        if args_term_gtr {
                             info!(
                                 "[StateFuture {}] After Handle AppendEntries => follower",
                                 self.raft.me
