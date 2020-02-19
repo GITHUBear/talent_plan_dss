@@ -78,10 +78,21 @@ pub struct Raft {
     // Your data here (2A, 2B, 2C).
     // Look at the paper's Figure 2 for a description of what
     // state a Raft server must maintain.
-    role: Role,             // the role of a node
-    voted_for: Option<u64>, // candidateId that received vote in current term
-    current_term: Arc<AtomicU64>,
+    role: Role, // the role of a node
     is_leader: Arc<AtomicBool>,
+
+    // 以下三项在服务器上持久存在
+    voted_for: Option<u64>,        // candidateId that received vote in current term
+    current_term: Arc<AtomicU64>,
+    logs: Vec<Log>,                // 每一个 log 包含指令和该指令关联的任期号
+
+    // 以下两项在服务器上经常变化
+    commit_index: usize,
+    last_applied: usize,
+
+    // 成为 Leader 后开始维护
+    next_index: Vec<usize>,
+    match_index: Vec<usize>, // 成为 leader 后初始化为 0
 
     msg_tx: UnboundedSender<ActionEv>,
     msg_rx: UnboundedReceiver<ActionEv>,
@@ -251,6 +262,24 @@ impl Raft {
 }
 
 impl Raft {
+    /// 判断 RPC Caller 的日志集是否比本节点的旧，旧返回 true，反之 false (包括一样新)
+    /// args_last_term 是 Caller 最后一项日志的 term
+    /// args_last_index 是 Caller 最后一项日志的 index
+    fn is_newer(&self, args_last_term: u64, args_last_index: u64) -> bool {
+        let (self_last_term, self_last_index) = match self.logs.last() {
+            Some(log) => (log.term, log.index),
+            None => (0, 0),
+        };
+
+        if self_last_term == args_last_term {
+            // term 相同，比较长度
+            self_last_index > args_last_index
+        } else {
+            // 比较 term
+            self_last_term > args_last_term
+        }
+    }
+
     fn be_follower(&mut self) {
         self.is_leader.store(false, Ordering::SeqCst);
         self.role = Role::Follower;
@@ -266,6 +295,7 @@ impl Raft {
     }
 
     fn be_leader(&mut self) {
+
         self.is_leader.store(true, Ordering::SeqCst);
         self.role = Role::Leader;
     }
@@ -274,13 +304,24 @@ impl Raft {
     fn handle_request_vote(&mut self, args: RequestVoteArgs) -> RequestVoteReply {
         // RequestVoteArgs { term, candidate_id }
         let term = self.current_term.load(Ordering::SeqCst);
-        let vote_granted = if args.term > term {
-            // 只要发现请求者的 term 比自己大就都同意投票
+
+        // 2A: 只要发现请求者的 term 比自己大就都同意投票 true is OK
+        // 2B: Raft Paper 5.4.1 选举限制
+        // 不管如何，args.term 只要比自己大就更新自己的 term
+        // 一个 candidate 在网络受阻的情况下多次提升自己的 term
+        // 这样做有利于在恢复后立即更新集群的 term
+        if args.term > term {
             self.current_term.store(args.term, Ordering::SeqCst);
-            true
-        } else if args.term < term {
+        }
+
+        let vote_granted = if args.term < term ||
+            self.is_newer(args.last_log_term, args.last_log_index) {
             // 只要发现请求者的 term 比自己小就都拒绝投票
+            // 只要发现请求者的日志比自己的旧就拒绝投票
             false
+        } else if args.term > term {
+            // 请求者的日志比自己的新且term大
+            true
         } else {
             // 在本任期已经投给过了请求者, 依然同意投票
             match self.voted_for {
@@ -316,9 +357,15 @@ impl Raft {
     /// 向所有 peers 发送投票请求
     fn send_request_vote_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
+        let (last_log_term, last_log_index) = match self.logs.last() {
+            Some(log) => (log.term, log.index),
+            None => (0, 0),
+        };
         let args = RequestVoteArgs {
             term,
             candidate_id: self.me as u64,
+            last_log_index,
+            last_log_term,
         };
 
         let me = self.me;
@@ -537,6 +584,10 @@ impl Stream for StateFuture {
                             );
                         });
                         if success {
+                            info!(
+                                "[StateFuture {}] After Handle AppendEntries => follower",
+                                self.raft.me
+                            );
                             // 投票标记为真, 改变 raft 状态为 follower
                             self.raft.be_follower();
                             // 重置超时时间, 设置下次超时执行选举
@@ -550,6 +601,10 @@ impl Stream for StateFuture {
                         // 节点已经转变状态为 follower，那么目前的 term 一定是本节点之前选举的之后任期
                         // 如果选举超时再一次开始了选举，那么目前的 term 也一定是本节点之前选举的之后任期
                         if self.raft.current_term.load(Ordering::SeqCst) == term {
+                            info!(
+                                "[StateFuture {}] After Get SuccessElection => leader",
+                                self.raft.me
+                            );
                             self.raft.be_leader();
                             self.timeout.reset(StateFuture::heartbeat_timeout());
                             self.timeout_ev = TimeoutEv::Heartbeat;
@@ -558,6 +613,10 @@ impl Stream for StateFuture {
                     ActionEv::Fail(term) => {
                         info!("[StateFuture {}] get Fail event", self.raft.me);
                         if term > self.raft.current_term.load(Ordering::SeqCst) {
+                            info!(
+                                "[StateFuture {}] After Get Fail event => follower",
+                                self.raft.me
+                            );
                             self.raft.be_follower();
                             self.timeout.reset(StateFuture::rand_election_timeout());
                             self.timeout_ev = TimeoutEv::Election;
@@ -583,7 +642,11 @@ impl Stream for StateFuture {
             Ok(Async::Ready(())) => {
                 match self.timeout_ev {
                     TimeoutEv::Election => {
-                        info!("[StateFuture {}] Election Timeout", self.raft.me);
+                        info!(
+                            "[StateFuture {}] Election Timeout at local term: {}",
+                            self.raft.me,
+                            self.raft.current_term.load(Ordering::SeqCst)
+                        );
                         // 改变 raft 状态为 candidate
                         self.raft.be_candidate();
                         // 重置超时时间, 设置下次超时执行选举
@@ -591,7 +654,11 @@ impl Stream for StateFuture {
                         self.timeout_ev = TimeoutEv::Election;
                     }
                     TimeoutEv::Heartbeat => {
-                        info!("[StateFuture {}] Heartbeat Timeout", self.raft.me);
+                        info!(
+                            "[StateFuture {}] Heartbeat Timeout at local term: {}",
+                            self.raft.me,
+                            self.raft.current_term.load(Ordering::SeqCst)
+                        );
                         // 发送心跳包
                         self.raft.send_heartbeat_all();
                         self.timeout.reset(StateFuture::heartbeat_timeout());

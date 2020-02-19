@@ -7,6 +7,8 @@ message RequestVoteArgs {
     // Your data here (2A, 2B).
     uint64 term = 1;                // candidate's term
     uint64 candidate_id = 2;        // candidate requesting vote
+    uint64 last_log_index = 3;
+    uint64 last_log_term = 4;
 }
 
 // Example RequestVote RPC reply structure.
@@ -19,9 +21,20 @@ message RequestVoteReply {
 message AppendEntriesArgs {
     uint64 term = 1;                // leader's term
     uint64 leader_id = 2;           // so followers can redirect clients
+    uint64 prev_log_index = 3;
+    uint64 prev_log_term = 4;
+    uint64 leader_commit = 5;
+    repeated Log entries = 6;
 }
 
 message AppendEntriesReply {
     uint64 term = 1;                // currentTerm, for leader to update itself
     bool success = 2;               // true if follower contained entry match
+}
+
+// 定义日志
+message Log {
+    uint64 term = 1;                // Leader 收到指令时候的任期号
+    uint64 index = 2;               // 本 log 在 logs 中的索引
+    bytes command = 3;              // 指令
 }
