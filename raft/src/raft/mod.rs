@@ -1,4 +1,5 @@
 use std::{
+    cmp::min,
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -88,6 +89,7 @@ pub struct Raft {
 
     // 以下两项在服务器上经常变化
     commit_index: usize,
+    #[allow(dead_code)]
     last_applied: usize,
 
     // 成为 Leader 后开始维护
@@ -96,6 +98,8 @@ pub struct Raft {
 
     msg_tx: UnboundedSender<ActionEv>,
     msg_rx: UnboundedReceiver<ActionEv>,
+
+    apply_ch: UnboundedSender<ApplyMsg>,
 }
 
 impl Raft {
@@ -111,7 +115,7 @@ impl Raft {
         peers: Vec<RaftClient>,
         me: usize,
         persister: Box<dyn Persister>,
-        _apply_ch: UnboundedSender<ApplyMsg>,
+        apply_ch: UnboundedSender<ApplyMsg>,
     ) -> Raft {
         let raft_state = persister.raft_state();
         let (tx, rx) = unbounded::<ActionEv>();
@@ -143,6 +147,8 @@ impl Raft {
 
             msg_tx: tx,
             msg_rx: rx,
+
+            apply_ch,
         };
 
         // initialize from state persisted before a crash
@@ -205,21 +211,6 @@ impl Raft {
         server: usize,
         args: &RequestVoteArgs,
     ) -> Receiver<Result<RequestVoteReply>> {
-        // Your code here if you want the rpc becomes async.
-        // Example:
-        // ```
-        // let peer = &self.peers[server];
-        // let (tx, rx) = channel();
-        // peer.spawn(
-        //     peer.request_vote(&args)
-        //         .map_err(Error::Rpc)
-        //         .then(move |res| {
-        //             tx.send(res);
-        //             Ok(())
-        //         }),
-        // );
-        // rx
-        // ```
         let (tx, rx) = channel::<Result<RequestVoteReply>>();
         let peer = &self.peers[server];
         peer.spawn(
@@ -235,19 +226,36 @@ impl Raft {
         rx
     }
 
+    // 2B: 修改 channel 中发送的值包含 server 编号、prev_log_index、entries 的长度
+    // 便于 heartbeat 的发送者在接收到回应后更新指定的 next_index 和 match_index
     fn send_heartbeat(
         &self,
         server: usize,
         args: &AppendEntriesArgs,
-    ) -> Receiver<Result<AppendEntriesReply>> {
-        let (tx, rx) = channel::<Result<AppendEntriesReply>>();
+    ) -> Receiver<(Result<AppendEntriesReply>, usize, usize, usize)> {
+        debug!(
+            "[StateFuture {}] send AppendEntriesArgs: [\
+            term: {}, index: {}, prev_log_index: {}, prev_log_term: {}, leader_commit: {} \
+            ] to {}",
+            self.me,
+            args.term,
+            args.leader_id,
+            args.prev_log_index,
+            args.prev_log_term,
+            args.leader_commit,
+            server
+        );
+        let (tx, rx) = channel::<(Result<AppendEntriesReply>, usize, usize, usize)>();
         let peer = &self.peers[server];
+        let prev_log_index = args.prev_log_index;
+        let entries_len = args.entries.len();
         peer.spawn(
             peer.append_entries(args)
                 .map_err(Error::Rpc)
                 .then(move |res| {
                     if !tx.is_canceled() {
-                        tx.send(res).unwrap();
+                        tx.send((res, server, prev_log_index as usize, entries_len))
+                            .unwrap();
                     }
                     ok(())
                 }),
@@ -256,19 +264,23 @@ impl Raft {
     }
 
     #[allow(dead_code)]
-    fn start<M>(&self, command: &M) -> Result<(u64, u64)>
-    where
-        M: labcodec::Message,
-    {
-        let index = 0;
-        let term = 0;
-        let is_leader = true;
-        let mut buf = vec![];
-        labcodec::encode(command, &mut buf).map_err(Error::Encode)?;
+    fn start(&mut self, command: Vec<u8>) -> Result<(u64, u64)> {
+        let index = self.logs.len();
+        let term = self.current_term.load(Ordering::SeqCst);
+        let is_leader = self.is_leader.load(Ordering::SeqCst);
         // Your code here (2B).
 
         if is_leader {
-            Ok((index, term))
+            self.logs.push(Log {
+                term,
+                index: index as u64,
+                command,
+            });
+            info!(
+                "[StatusFuture {}] start a cmd at term: {}, index: {}",
+                self.me, term, index
+            );
+            Ok((index as u64, term as u64))
         } else {
             Err(Error::NotLeader)
         }
@@ -298,7 +310,7 @@ impl Raft {
     /// args_prev_term 是 Caller 希望匹配的日志 term
     /// args_prev_index 是 Caller 希望匹配的日志 index
     fn is_match(&self, args_prev_term: u64, args_prev_index: u64) -> bool {
-        match self.logs.get(args_prev_index) {
+        match self.logs.get(args_prev_index as usize) {
             Some(log) => {
                 assert_eq!(log.index, args_prev_index);
                 log.term == args_prev_term
@@ -375,8 +387,8 @@ impl Raft {
         (RequestVoteReply { term, vote_granted }, args.term > term)
     }
 
-    /// 处理 RPC AppendEntries 请求, 返回 Reply
-    fn handle_append_entries(&mut self, args: AppendEntriesArgs) -> (AppendEntriesReply, bool) {
+    /// 处理 RPC AppendEntries 请求, 返回 Reply 和一个bool值表示 args.term 是否大于 term
+    fn handle_append_entries(&mut self, mut args: AppendEntriesArgs) -> (AppendEntriesReply, bool) {
         // AppendEntriesArgs { term, leader_id }
         let prev_index = args.prev_log_index;
         let prev_term = args.prev_log_term;
@@ -388,11 +400,21 @@ impl Raft {
 
         let log_match = self.is_match(prev_term, prev_index);
         let success = !(args.term < term || !log_match);
-        if success && !args.entries.is_empty() {
-            // 匹配 且 entries 不为空
-            // 这里没有再搜索冲突位置，直接截取 prev_index + 1 长度的 log
-            self.logs.truncate(prev_index + 1);
-            self.logs.append(&mut args.entries);
+        if success {
+            if !args.entries.is_empty() {
+                // 匹配 且 entries 不为空
+                // 这里没有再搜索冲突位置，直接截取 prev_index + 1 长度的 log
+                self.logs.truncate(prev_index as usize + 1);
+                self.logs.append(&mut args.entries);
+            }
+            // 匹配, 并在可能加入了新的条目后, 判断 leader 发来的 commit_index
+            if args.leader_commit > self.commit_index as u64 {
+                // 将 commit_index 更新为 args.leader_commit 和新日志条目索引值中较小的一个
+                self.commit_index = min(
+                    args.leader_commit as usize,
+                    prev_index as usize + args.entries.len(),
+                );
+            }
         }
 
         if log_match {
@@ -403,15 +425,15 @@ impl Raft {
                     conflict_index: 0,
                     conflict_term: 0,
                 },
-                args.term > term,
+                args.term >= term,
             )
         } else {
-            let (conflict_index, conflict_term) = match self.logs.get(prev_index) {
+            let (conflict_index, conflict_term) = match self.logs.get(prev_index as usize) {
                 Some(log) => {
                     // 越过所有那个任期冲突的所有日志条目,找到该任期最早的日志索引
                     let mut index = prev_index;
                     for i in (0..=prev_index).rev() {
-                        if self.logs[i].term != log.term {
+                        if self.logs[i as usize].term != log.term {
                             index = i + 1;
                         }
                     }
@@ -426,10 +448,10 @@ impl Raft {
                 AppendEntriesReply {
                     term,
                     success,
-                    conflict_index: 0,
-                    conflict_term: 0,
+                    conflict_index,
+                    conflict_term,
                 },
-                args.term > term,
+                args.term >= term,
             )
         }
     }
@@ -495,7 +517,7 @@ impl Raft {
                         // 不同意投票，查看回应的 term
                         // 不同意原因1：reply.term > term
                         if reply.term > term {
-                            // 向状态机发送 FailElection 消息
+                            // 向状态机发送 Fail 消息
                             tx.unbounded_send(ActionEv::Fail(reply.term))
                                 .map_err(|e| {
                                     error!(
@@ -522,16 +544,34 @@ impl Raft {
         tokio::spawn(stream);
     }
 
-    fn send_heartbeat_all(&self) {
-        let term = self.current_term.load(Ordering::SeqCst);
-        let args = AppendEntriesArgs {
+    /// 帮助 send_heartbeat_all 计算发送给 server 的 AppendEntries RPC 参数
+    fn set_append_entries_arg(&self, term: u64, server: usize) -> AppendEntriesArgs {
+        let prev_log_index = self.next_index[server] - 1;
+        let prev_log_term = self.logs[prev_log_index].term;
+
+        let entries = if self.next_index[server] > self.match_index[server] + 1 {
+            Vec::with_capacity(0)
+        } else {
+            Vec::from(&self.logs[(prev_log_index + 1)..])
+        };
+
+        AppendEntriesArgs {
             term,
             leader_id: self.me as u64,
-        };
+            prev_log_index: prev_log_index as u64,
+            prev_log_term,
+            leader_commit: self.commit_index as u64,
+            entries,
+        }
+    }
+
+    /// 向所有 peers 发送 AppendEntries RPC
+    fn send_heartbeat_all(&self) {
+        let term = self.current_term.load(Ordering::SeqCst);
 
         let me = self.me;
         // AppendEntries Reply 的接收端
-        let result_rxs: Vec<Receiver<Result<AppendEntriesReply>>> = self
+        let result_rxs: Vec<Receiver<(Result<AppendEntriesReply>, usize, usize, usize)>> = self
             .peers
             .iter()
             .enumerate()
@@ -539,26 +579,68 @@ impl Raft {
                 // 筛除自己
                 *id != me
             })
-            .map(|(id, _)| self.send_heartbeat(id, &args))
+            .map(|(id, _)| self.send_heartbeat(id, &self.set_append_entries_arg(term, id)))
             .collect();
 
         let tx = self.msg_tx.clone();
         let stream = futures::stream::futures_unordered(result_rxs)
-            .for_each(move |reply| {
+            .for_each(move |(reply, id, prev_index, entries_len)| {
                 if let Ok(reply) = reply {
                     info!(
-                        "[send_heartbeat_all {}] get AppendEntries reply: {:?}",
-                        me, reply
+                        "[send_heartbeat_all {}] get AppendEntries reply from StateFuture {}: {:?}",
+                        me, id, reply
                     );
-                    if reply.term > term {
-                        tx.unbounded_send(ActionEv::Fail(reply.term))
+
+                    if reply.success {
+                        // 说明日志匹配且本机term大于等于对方term
+                        // 因为 move 的限制发送更新 match_index 和 next_index 的消息到 StateFuture
+                        debug!(
+                            "[send_heartbeat_all {}] StateFuture {}'s log match with me",
+                            me, id
+                        );
+                        tx.unbounded_send(ActionEv::UpdateIndex(
+                            term,
+                            id,
+                            Ok(prev_index + entries_len + 1),
+                        ))
+                        .map_err(|e| {
+                            error!(
+                                "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                me, e
+                            );
+                        })
+                        .unwrap();
+                    } else {
+                        if reply.term > term {
+                            // 立即回到 follower 状态
+                            tx.unbounded_send(ActionEv::Fail(reply.term))
+                                .map_err(|e| {
+                                    error!(
+                                        "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
+                                        me, e
+                                    );
+                                })
+                                .unwrap();
+                        } else {
+                            // 说明是未匹配
+                            // 发送更新 next_index 的消息到 StateFuture
+                            debug!(
+                                "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
+                                me, id
+                            );
+                            tx.unbounded_send(ActionEv::UpdateIndex(
+                                term,
+                                id,
+                                Err(reply.conflict_index as usize),
+                            ))
                             .map_err(|e| {
                                 error!(
-                                    "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
+                                    "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
                                     me, e
                                 );
                             })
                             .unwrap();
+                        }
                     }
                 }
                 ok(())
@@ -566,6 +648,51 @@ impl Raft {
             .map_err(|_| ());
 
         tokio::spawn(stream);
+    }
+
+    /// 在每次 Leader 的 match_index 发生改变的时候都试图更新一下 commit_index
+    fn update_commit_index(&mut self) {
+        // 1. 大多数的matchIndex[i] ≥ N成立
+        let mut tmp_match_index = self.match_index.clone();
+        tmp_match_index[self.me] = self.logs.len() - 1;
+        tmp_match_index.sort_unstable();
+
+        let group_num = self.peers.len();
+        // 那么 N 可能的范围就落在tmp_match_index 的 0..(group_num - 1) / 2 索引位置
+        tmp_match_index.truncate((group_num + 1) / 2);
+
+        let current_term = self.current_term.load(Ordering::SeqCst);
+        let new_commit = tmp_match_index
+            .into_iter()
+            .filter(|n|
+                // 2. N > commitIndex
+                // 3. log[N].term == currentTerm
+                *n > self.commit_index && self.logs[*n].term == current_term)
+            .max();
+
+        if let Some(n) = new_commit {
+            debug!(
+                "[StateFuture {}] update commit_index from {} to {}",
+                self.me, self.commit_index, n
+            );
+            self.commit_index = n;
+            // 更新了 commit_index 尝试 apply log
+            self.apply_msg();
+        }
+    }
+
+    /// 提交 log 至应用层，并改变 last_applied
+    fn apply_msg(&mut self) {
+        while self.last_applied < self.commit_index {
+            let apply_idx = self.last_applied + 1;
+            let msg = ApplyMsg {
+                command_valid: true,
+                command: self.logs[apply_idx].command.clone(),
+                command_index: apply_idx as u64,
+            };
+            self.apply_ch.unbounded_send(msg).unwrap();
+            self.last_applied += 1;
+        }
     }
 }
 
@@ -587,6 +714,14 @@ enum ActionEv {
     SuccessElection(u64),
     /// 在一次选举当中失败 包含导致失败的发送者任期
     Fail(u64),
+    /// 广播 heartbeat 之后，更新 match_index 和 next_index
+    /// Ok(usize) 表示匹配成功后新的 next_index, 相应地更新 match_index
+    /// Err(usize) 表示匹配失败后新的 next_index, 无需更新 match_index
+    /// u64 存储 term, 作用同上
+    /// usize 存储 id
+    UpdateIndex(u64, usize, std::result::Result<usize, usize>),
+    /// start 命令
+    StartCmd(Vec<u8>, Sender<Result<(u64, u64)>>),
     /// 关闭状态机
     Kill,
 }
@@ -639,13 +774,13 @@ impl Stream for StateFuture {
                         // 将 reply 通过 tx 发送
                         info!("[StateFuture {}] get RequestVote event", self.raft.me);
                         let (reply, args_term_gtr) = self.raft.handle_request_vote(args);
+                        let vote_granted = reply.vote_granted;
                         tx.send(reply).unwrap_or_else(|_| {
                             error!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
                         });
                         // 2B: 现在 vote_granted 就不能完全表示 args.term > term 的情况了
                         // 故修改 handle_request_vote 的接口
-                        if args_term_gtr {
-                            // 投票标记为真, 改变 raft 状态为 follower
+                        if args_term_gtr || vote_granted {
                             self.raft.be_follower();
                             // 重置超时时间, 设置下次超时执行选举
                             self.timeout.reset(StateFuture::rand_election_timeout());
@@ -655,14 +790,14 @@ impl Stream for StateFuture {
                     ActionEv::AppendEntries(args, tx) => {
                         // 调用 Raft::handle_append_entries, 返回 reply
                         info!("[StateFuture {}] get AppendEntries event", self.raft.me);
-                        let (reply, args_term_gtr) = self.raft.handle_append_entries(args);
+                        let (reply, args_term_ge) = self.raft.handle_append_entries(args);
                         tx.send(reply).unwrap_or_else(|_| {
                             error!(
                                 "[StateFuture {}] send AppendEntriesReply error",
                                 self.raft.me
                             );
                         });
-                        if args_term_gtr {
+                        if args_term_ge {
                             info!(
                                 "[StateFuture {}] After Handle AppendEntries => follower",
                                 self.raft.me
@@ -672,6 +807,8 @@ impl Stream for StateFuture {
                             // 重置超时时间, 设置下次超时执行选举
                             self.timeout.reset(StateFuture::rand_election_timeout());
                             self.timeout_ev = TimeoutEv::Election;
+                            // 更新 last_applied 并向应用层提交日志
+                            self.raft.apply_msg();
                         }
                     }
                     ActionEv::SuccessElection(term) => {
@@ -700,6 +837,33 @@ impl Stream for StateFuture {
                             self.timeout.reset(StateFuture::rand_election_timeout());
                             self.timeout_ev = TimeoutEv::Election;
                         }
+                    }
+                    ActionEv::UpdateIndex(term, id, res) => {
+                        info!("[StateFuture {}] get UpdateIndex event", self.raft.me);
+                        if term == self.raft.current_term.load(Ordering::SeqCst) {
+                            match res {
+                                Ok(new_index) => {
+                                    let prev_match_index = self.raft.match_index[id];
+                                    if new_index - 1 > prev_match_index {
+                                        self.raft.match_index[id] = new_index - 1;
+                                        self.raft.next_index[id] = new_index;
+                                        // match_index 发生变化 更新 commit_index
+                                        self.raft.update_commit_index();
+                                    }
+                                }
+                                Err(new_index) => {
+                                    if new_index < self.raft.next_index[id] {
+                                        self.raft.next_index[id] = new_index;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    ActionEv::StartCmd(cmd, tx) => {
+                        let res = self.raft.start(cmd);
+                        tx.send(res).unwrap_or_else(|_| {
+                            error!("[StateFuture {}] send StartCmd result error", self.raft.me);
+                        });
                     }
                     ActionEv::Kill => {
                         // Stream 完成
@@ -824,7 +988,29 @@ impl Node {
         // Your code here.
         // Example:
         // self.raft.start(command)
-        crate::your_code_here(command)
+        if !self.is_leader() {
+            return Err(Error::NotLeader);
+        }
+
+        let (tx, rx) = channel();
+        let mut buf = vec![];
+        labcodec::encode(command, &mut buf).map_err(Error::Encode)?;
+
+        if !self.msg_tx.is_closed() {
+            self.msg_tx
+                .clone()
+                .unbounded_send(ActionEv::StartCmd(buf, tx))
+                .map_err(|_| ())
+                .unwrap();
+        } else {
+            return Err(Error::NotLeader);
+        }
+
+        if let Ok(res) = rx.wait() {
+            res
+        } else {
+            Err(Error::NotLeader)
+        }
     }
 
     /// The current term of this peer.
