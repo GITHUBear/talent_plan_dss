@@ -1,0 +1,27 @@
+test_basic_agree_2b
+[2020-02-20T09:16:40Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:40Z INFO  raft::raft::config]   798.961708ms  5 28 3
+
+test_fail_agree_2b
+[2020-02-20T09:16:49Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:49Z INFO  raft::raft::config]   6.038519713s  3 126 8
+
+test_fail_no_agree_2b
+[2020-02-20T09:16:52Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:52Z INFO  raft::raft::config]   3.553142175s  5 240 3
+
+test_concurrent_starts_2b
+[2020-02-20T09:16:40Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:40Z INFO  raft::raft::config]   709.043974ms  3 12 6
+
+test_rejoin_2b
+[2020-02-20T09:16:57Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:57Z INFO  raft::raft::config]   4.40752065s  3 146 4
+
+test_backup_2b
+[2020-02-20T09:16:39Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:39Z INFO  raft::raft::config]   27.670180683s  5 2432 102
+
+test_count_2b
+[2020-02-20T09:16:43Z INFO  raft::raft::config]   ... Passed --
+[2020-02-20T09:16:43Z INFO  raft::raft::config]   2.287282196s  3 44 12
