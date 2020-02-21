@@ -40,3 +40,10 @@ message Log {
     uint64 index = 2;               // 本 log 在 logs 中的索引
     bytes command = 3;              // 指令
 }
+
+// 定义Raft持久化结构
+message RaftState {
+    uint64 current_term = 1;
+    oneof voted_for {uint64 voted = 2;}
+    repeated Log entries = 3;
+}

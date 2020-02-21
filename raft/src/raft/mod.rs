@@ -34,7 +34,11 @@ use crate::proto::raftpb::*;
 
 const ELECTION_TIMEOUT_START: u64 = 150;
 const ELECTION_TIMEOUT_END: u64 = 300;
-const HEARTBEAT_TIMEOUT: u64 = 100;
+// 将原先的 150 修改为 50，按照 Raft Paper Heart
+// 广播时间（broadcastTime） << 选举超时时间（electionTimeout）
+// heartbeat超时需要比选举超时小一个数量级
+// 修复 test_figure_8_unreliable_2c 偶尔不能通过的问题
+const HEARTBEAT_TIMEOUT: u64 = 50;
 
 pub struct ApplyMsg {
     pub command_valid: bool,
@@ -89,7 +93,6 @@ pub struct Raft {
 
     // 以下两项在服务器上经常变化
     commit_index: usize,
-    #[allow(dead_code)]
     last_applied: usize,
 
     // 成为 Leader 后开始维护
@@ -164,10 +167,15 @@ impl Raft {
     #[allow(dead_code)]
     fn persist(&mut self) {
         // Your code here (2C).
-        // Example:
-        // labcodec::encode(&self.xxx, &mut data).unwrap();
-        // labcodec::encode(&self.yyy, &mut data).unwrap();
-        // self.persister.save_raft_state(data);
+        let current_term = self.current_term.load(Ordering::SeqCst);
+        let state = RaftState {
+            current_term,
+            voted_for: self.voted_for.clone().map(raft_state::VotedFor::Voted),
+            entries: self.logs.clone(),
+        };
+        let mut data: Vec<u8> = vec![];
+        labcodec::encode(&state, &mut data).unwrap();
+        self.persister.save_raft_state(data);
     }
 
     /// restore previously persisted state.
@@ -177,16 +185,12 @@ impl Raft {
             return;
         }
         // Your code here (2C).
-        // Example:
-        // match labcodec::decode(data) {
-        //     Ok(o) => {
-        //         self.xxx = o.xxx;
-        //         self.yyy = o.yyy;
-        //     }
-        //     Err(e) => {
-        //         panic!("{:?}", e);
-        //     }
-        // }
+        if let Ok(raft_state) = labcodec::decode(data) {
+            let raft_state: RaftState = raft_state;
+            self.current_term.store(raft_state.current_term, Ordering::SeqCst);
+            self.voted_for = raft_state.voted_for.clone().map(|raft_state::VotedFor::Voted(n)| n);
+            self.logs = raft_state.entries.clone();
+        }
     }
 
     /// example code to send a RequestVote RPC to a server.
@@ -263,7 +267,6 @@ impl Raft {
         rx
     }
 
-    #[allow(dead_code)]
     fn start(&mut self, command: Vec<u8>) -> Result<(u64, u64)> {
         let index = self.logs.len();
         let term = self.current_term.load(Ordering::SeqCst);
@@ -276,6 +279,7 @@ impl Raft {
                 index: index as u64,
                 command,
             });
+            self.persist();
             info!(
                 "[StatusFuture {}] start a cmd at term: {}, index: {}",
                 self.me, term, index
@@ -325,6 +329,7 @@ impl Raft {
     fn be_follower(&mut self) {
         self.is_leader.store(false, Ordering::SeqCst);
         self.role = Role::Follower;
+        self.persist();
     }
 
     fn be_candidate(&mut self) {
@@ -332,6 +337,7 @@ impl Raft {
         self.current_term.fetch_add(1, Ordering::SeqCst);
         self.role = Role::Candidate;
         self.voted_for = Some(self.me as u64);
+        self.persist();
 
         self.send_request_vote_all();
     }
@@ -347,6 +353,7 @@ impl Raft {
         }
         self.is_leader.store(true, Ordering::SeqCst);
         self.role = Role::Leader;
+        self.persist();
     }
 
     /// 处理 RPC RequestVote 请求, 返回 Reply 和一个bool值表示 args.term 是否大于 term

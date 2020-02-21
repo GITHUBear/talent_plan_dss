@@ -1,0 +1,31 @@
+test_persist1_2c
+[2020-02-21T05:29:21Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:29:21Z INFO  raft::raft::config]   3.386131679s  3 112 6
+
+test_persist2_2c
+[2020-02-21T05:29:41Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:29:41Z INFO  raft::raft::config]   20.225904814s  5 2124 16
+
+test_persist3_2c
+[2020-02-21T05:29:43Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:29:43Z INFO  raft::raft::config]   1.862283321s  3 48 4
+
+test_figure_8_2c
+[2020-02-21T05:28:36Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:28:36Z INFO  raft::raft::config]   31.893985299s  5 1040 23
+
+test_unreliable_agree_2c
+[2020-02-21T05:30:02Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:30:02Z INFO  raft::raft::config]   3.07146549s  5 220 246
+
+test_figure_8_unreliable_2c
+[2020-02-21T05:29:17Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:29:17Z INFO  raft::raft::config]   41.104991204s  5 6516 585
+
+test_reliable_churn_2c
+[2020-02-21T05:29:59Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:29:59Z INFO  raft::raft::config]   16.24874644s  5 1263 699
+
+test_unreliable_churn_2c
+[2020-02-21T05:30:18Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:30:18Z INFO  raft::raft::config]   16.192244441s  5 1292 315

@@ -1,587 +1,866 @@
    Compiling raft v0.1.0 (/Users/dimdew/CLionProjects/talent-plan/dss/raft)
-    Finished test [unoptimized + debuginfo] target(s) in 12.20s
+    Finished test [unoptimized + debuginfo] target(s) in 12.06s
      Running target/debug/deps/raft-6d4137e17b053587
-[2020-02-20T08:37:24Z DEBUG raft::raft::config] disconnect(0)
-[2020-02-20T08:37:24Z INFO  raft::raft] [Node::new] node 0 init
-[2020-02-20T08:37:24Z DEBUG raft::raft::config] disconnect(1)
-[2020-02-20T08:37:24Z INFO  raft::raft] [Node::new] node 1 init
-[2020-02-20T08:37:24Z DEBUG raft::raft::config] disconnect(2)
-[2020-02-20T08:37:24Z INFO  raft::raft] [Node::new] node 2 init
-[2020-02-20T08:37:24Z DEBUG raft::raft::config] connect(0)
-[2020-02-20T08:37:24Z DEBUG raft::raft::config] connect(1)
-[2020-02-20T08:37:24Z DEBUG raft::raft::config] connect(2)
-[2020-02-20T08:37:24Z INFO  raft::raft::config] Test (2A): initial election ...
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 1
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] get RequestVote event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] get RequestVote event
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_request_vote_all 2] get vote reply: RequestVoteReply { term: 1, vote_granted: true }
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get SuccessElection event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] After Get SuccessElection => leader
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:24Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:24Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:24Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:24Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:24Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:24Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:24Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:24Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:25Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:25Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:26Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:26Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T08:37:27Z INFO  raft::raft::config]   3.043637554s  3 56 0
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] killed
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] killed
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] killed
-[2020-02-20T08:37:27Z DEBUG raft::raft::config] disconnect(0)
-[2020-02-20T08:37:27Z INFO  raft::raft] [Node::new] node 0 init
-[2020-02-20T08:37:27Z DEBUG raft::raft::config] disconnect(1)
-[2020-02-20T08:37:27Z INFO  raft::raft] [Node::new] node 1 init
-[2020-02-20T08:37:27Z DEBUG raft::raft::config] disconnect(2)
-[2020-02-20T08:37:27Z INFO  raft::raft] [Node::new] node 2 init
-[2020-02-20T08:37:27Z DEBUG raft::raft::config] connect(0)
-[2020-02-20T08:37:27Z DEBUG raft::raft::config] connect(1)
-[2020-02-20T08:37:27Z DEBUG raft::raft::config] connect(2)
-[2020-02-20T08:37:27Z INFO  raft::raft::config] Test (2A): election after network failure ...
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 1
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get RequestVote event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get RequestVote event
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_request_vote_all 0] get vote reply: RequestVoteReply { term: 1, vote_granted: true }
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get SuccessElection event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] After Get SuccessElection => leader
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 0] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 0] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 0] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get UpdateIndex event
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 0] StateFuture 2's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 0] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 0] StateFuture 1's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get UpdateIndex event
-[2020-02-20T08:37:27Z INFO  raft::raft] [send_heartbeat_all 0] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:27Z DEBUG raft::raft] [send_heartbeat_all 0] StateFuture 2's log match with me
-[2020-02-20T08:37:27Z INFO  raft::raft] [StateFuture 0] get UpdateIndex event
-[2020-02-20T08:37:28Z DEBUG raft::raft::config] disconnect(0)
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 2
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get RequestVote event
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_request_vote_all 2] get vote reply: RequestVoteReply { term: 2, vote_granted: true }
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get SuccessElection event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] After Get SuccessElection => leader
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] Heartbeat Timeout at local term: 2
-[2020-02-20T08:37:28Z DEBUG raft::raft::config] connect(0)
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 0's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:28Z DEBUG raft::raft] [send_heartbeat_all 2] StateFuture 1's log match with me
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
-[2020-02-20T08:37:28Z DEBUG raft::raft::config] disconnect(2)
-[2020-02-20T08:37:28Z DEBUG raft::raft::config] disconnect(0)
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 4
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 4
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 5
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 5
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 6
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 6
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 7
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 7
-[2020-02-20T08:37:29Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 8
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 8
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 9
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 9
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 10
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 10
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 11
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 11
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 12
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:30Z DEBUG raft::raft::config] connect(0)
-[2020-02-20T08:37:30Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 12
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get RequestVote event
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_request_vote_all 0] get vote reply: RequestVoteReply { term: 13, vote_granted: false }
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 13
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get RequestVote event
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_request_vote_all 1] get vote reply: RequestVoteReply { term: 13, vote_granted: true }
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get SuccessElection event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] After Get SuccessElection => leader
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z DEBUG raft::raft::config] connect(2)
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 3
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: false, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 14, success: false, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get Fail event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Get Fail event => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get Fail event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Get Fail event => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 2's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 2's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 2's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 2's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 14
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 2's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 14, success: true, conflict_index: 0, conflict_term: 0 }
-[2020-02-20T08:37:31Z DEBUG raft::raft] [send_heartbeat_all 1] StateFuture 0's log match with me
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
-[2020-02-20T08:37:31Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T08:37:31Z INFO  raft::raft::config]   4.420248907s  3 142 0
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 1] killed
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 2] killed
-[2020-02-20T08:37:31Z INFO  raft::raft] [StateFuture 0] killed
+[2020-02-21T05:18:54Z INFO  raft::raft] [Node::new] node 0 init
+[2020-02-21T05:18:54Z INFO  raft::raft] [Node::new] node 1 init
+[2020-02-21T05:18:54Z INFO  raft::raft] [Node::new] node 2 init
+[2020-02-21T05:18:54Z INFO  raft::raft::config] Test (2A): initial election ...
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 1
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get RequestVote event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get RequestVote event
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_request_vote_all 1] get vote reply: RequestVoteReply { term: 1, vote_granted: true }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get SuccessElection event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] After Get SuccessElection => leader
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:55Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:56Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:57Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:18:57Z INFO  raft::raft::config]   3.063061275s  3 108 0
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 0] killed
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 1] killed
+[2020-02-21T05:18:57Z INFO  raft::raft] [StateFuture 2] killed
+[2020-02-21T05:18:57Z INFO  raft::raft] [Node::new] node 0 init
+[2020-02-21T05:18:57Z INFO  raft::raft] [Node::new] node 1 init
+[2020-02-21T05:18:57Z INFO  raft::raft] [Node::new] node 2 init
+[2020-02-21T05:18:57Z INFO  raft::raft::config] Test (2A): election after network failure ...
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 1
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get RequestVote event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get RequestVote event
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_request_vote_all 2] get vote reply: RequestVoteReply { term: 1, vote_granted: true }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get SuccessElection event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] After Get SuccessElection => leader
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Election Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get RequestVote event
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_request_vote_all 1] get vote reply: RequestVoteReply { term: 2, vote_granted: true }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get SuccessElection event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] After Get SuccessElection => leader
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 2
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: false, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 2, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: false, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get Fail event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 2] get Fail event
+[2020-02-21T05:18:58Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [send_heartbeat_all 1] get AppendEntries reply from StateFuture 2: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] get UpdateIndex event
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 4
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 4
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:18:59Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 5
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 5
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 6
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 6
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 7
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 7
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 8
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 8
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:00Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 9
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 9
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 10
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 10
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 11
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] Election Timeout at local term: 11
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get RequestVote event
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_request_vote_all 0] get vote reply: RequestVoteReply { term: 12, vote_granted: false }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Election Timeout at local term: 12
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get RequestVote event
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_request_vote_all 2] get vote reply: RequestVoteReply { term: 12, vote_granted: true }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get SuccessElection event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] After Get SuccessElection => leader
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] Heartbeat Timeout at local term: 3
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 3, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:01Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] Heartbeat Timeout at local term: 13
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] get AppendEntries event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 0] After Handle AppendEntries => follower
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 1: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [send_heartbeat_all 2] get AppendEntries reply from StateFuture 0: AppendEntriesReply { term: 13, success: true, conflict_index: 0, conflict_term: 0 }
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 2] get UpdateIndex event
+[2020-02-21T05:19:02Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:19:02Z INFO  raft::raft::config]   4.452019818s  3 226 0
+[2020-02-21T05:19:02Z INFO  raft::raft] [StateFuture 1] killed
    Doc-tests raft

@@ -1,7 +1,7 @@
 test_initial_election_2a
-[2020-02-20T08:37:27Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T08:37:27Z INFO  raft::raft::config]   3.043637554s  3 56 0
+[2020-02-21T05:18:57Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:18:57Z INFO  raft::raft::config]   3.063061275s  3 108 0
 
 test_reelection_2a
-[2020-02-20T08:37:31Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T08:37:31Z INFO  raft::raft::config]   4.420248907s  3 142 0
+[2020-02-21T05:19:02Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:19:02Z INFO  raft::raft::config]   4.452019818s  3 226 0

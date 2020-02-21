@@ -1,27 +1,27 @@
 test_basic_agree_2b
-[2020-02-20T09:16:40Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:40Z INFO  raft::raft::config]   798.961708ms  5 28 3
+[2020-02-21T05:23:15Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:15Z INFO  raft::raft::config]   491.127628ms  5 28 3
 
 test_fail_agree_2b
-[2020-02-20T09:16:49Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:49Z INFO  raft::raft::config]   6.038519713s  3 126 8
+[2020-02-21T05:23:22Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:22Z INFO  raft::raft::config]   3.800240025s  3 142 7
 
 test_fail_no_agree_2b
-[2020-02-20T09:16:52Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:52Z INFO  raft::raft::config]   3.553142175s  5 240 3
+[2020-02-21T05:23:25Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:25Z INFO  raft::raft::config]   3.408688414s  5 348 3
 
 test_concurrent_starts_2b
-[2020-02-20T09:16:40Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:40Z INFO  raft::raft::config]   709.043974ms  3 12 6
+[2020-02-21T05:23:16Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:16Z INFO  raft::raft::config]   548.565967ms  3 16 6
 
 test_rejoin_2b
-[2020-02-20T09:16:57Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:57Z INFO  raft::raft::config]   4.40752065s  3 146 4
+[2020-02-21T05:23:31Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:31Z INFO  raft::raft::config]   5.892790832s  3 326 4
 
 test_backup_2b
-[2020-02-20T09:16:39Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:39Z INFO  raft::raft::config]   27.670180683s  5 2432 102
+[2020-02-21T05:23:15Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:15Z INFO  raft::raft::config]   17.011956484s  5 2520 102
 
 test_count_2b
-[2020-02-20T09:16:43Z INFO  raft::raft::config]   ... Passed --
-[2020-02-20T09:16:43Z INFO  raft::raft::config]   2.287282196s  3 44 12
+[2020-02-21T05:23:18Z INFO  raft::raft::config]   ... Passed --
+[2020-02-21T05:23:18Z INFO  raft::raft::config]   2.185158926s  3 76 12
