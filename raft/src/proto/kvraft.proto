@@ -15,6 +15,8 @@ message PutAppendRequest {
     // "Put" or "Append"
     Op op = 3;
     // You'll have to add definitions here.
+    uint64 seq = 4;
+    string name = 5;
 }
 
 message PutAppendReply {
@@ -25,10 +27,19 @@ message PutAppendReply {
 message GetRequest {
     string key = 1;
     // You'll have to add definitions here.
+    uint64 seq = 2;
+    string name = 3;
 }
 
 message GetReply {
     bool wrong_leader = 1;
     string err = 2;
+    string value = 3;
+}
+
+message Command {
+    // 0 = Get, 1 = Put, 2 = Append
+    uint64 op = 1;
+    string key = 2;
     string value = 3;
 }

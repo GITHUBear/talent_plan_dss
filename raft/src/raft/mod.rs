@@ -75,7 +75,6 @@ pub struct Raft {
     // RPC end points of all peers
     peers: Vec<RaftClient>,
     // Object to hold this peer's persisted state
-    #[allow(dead_code)]
     persister: Box<dyn Persister>,
     // this peer's index into peers[]
     me: usize,
@@ -158,13 +157,11 @@ impl Raft {
         rf.restore(&raft_state);
 
         rf
-        //        crate::your_code_here((rf, apply_ch))
     }
 
     /// save Raft's persistent state to stable storage,
     /// where it can later be retrieved after a crash and restart.
     /// see paper's Figure 2 for a description of what should be persistent.
-    #[allow(dead_code)]
     fn persist(&mut self) {
         // Your code here (2C).
         let current_term = self.current_term.load(Ordering::SeqCst);
@@ -394,7 +391,7 @@ impl Raft {
         (RequestVoteReply { term, vote_granted }, args.term > term)
     }
 
-    /// 处理 RPC AppendEntries 请求, 返回 Reply 和一个bool值表示 args.term 是否大于 term
+    /// 处理 RPC AppendEntries 请求, 返回 Reply 和一个bool值表示 args.term 是否大于等于 term
     fn handle_append_entries(&mut self, mut args: AppendEntriesArgs) -> (AppendEntriesReply, bool) {
         // AppendEntriesArgs { term, leader_id }
         let prev_index = args.prev_log_index;
@@ -951,8 +948,8 @@ impl Stream for StateFuture {
 pub struct Node {
     // Your code here.
     state_machine: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
-    current_term: Arc<AtomicU64>,
-    is_leader: Arc<AtomicBool>,
+    pub current_term: Arc<AtomicU64>,
+    pub is_leader: Arc<AtomicBool>,
     msg_tx: UnboundedSender<ActionEv>,
 }
 
