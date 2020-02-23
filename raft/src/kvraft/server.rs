@@ -16,6 +16,7 @@ use std::sync::{
 use std::thread;
 use std::time::Duration;
 
+#[derive(Debug)]
 pub enum Reply {
     Get(GetReply),
     PutAppend(PutAppendReply),
@@ -33,9 +34,9 @@ pub struct KvServer {
     // 保存一个 client 名到该客户端提交的操作的最大序列号的映射
     // 避免一个序列号的操作被 client 反复提交
     client_seq_map: HashMap<String, u64>,
-    // 保存一个 操作日志索引 到 (相应操作请求的结果发送端,term) 的映射
+    // 保存一个 操作日志索引 到 (相应操作请求的结果发送端,term,client name,client seq,操作方式) 的映射
     // 用于防止 get 和 put_append 方法的阻塞
-    log_index_channel_map: HashMap<u64, (Sender<Reply>, u64)>,
+    log_index_channel_map: HashMap<u64, (Sender<Reply>, u64, String, u64, u64)>,
     // 传输 客户端调用事件 的发送端和接收端
     msg_rx: UnboundedReceiver<ActionEv>,
     msg_tx: UnboundedSender<ActionEv>,
@@ -106,7 +107,7 @@ impl Stream for KvServerFuture {
                                 // 成功将 command 送入 raft
                                 info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
                                 // 保存 发送端
-                                self.server.log_index_channel_map.insert(index, (tx, term));
+                                self.server.log_index_channel_map.insert(index, (tx, term, args.name.clone(), args.seq, 0));
                             }
                             Err(_) => {
                                 // 不是 leader, 立即发送 Reply
@@ -142,7 +143,7 @@ impl Stream for KvServerFuture {
                                 // 成功将 command 送入 raft
                                 info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
                                 // 保存 发送端
-                                self.server.log_index_channel_map.insert(index, (tx, term));
+                                self.server.log_index_channel_map.insert(index, (tx, term, args.name.clone(), args.seq, 1));
                             }
                             Err(_) => {
                                 // 不是 leader, 立即发送 Reply
@@ -167,6 +168,7 @@ impl Stream for KvServerFuture {
                         }
                     }
                     ActionEv::Kill => {
+                        self.server.rf.kill();
                         return Ok(Async::Ready(None));
                     }
                 }
@@ -191,12 +193,12 @@ impl Stream for KvServerFuture {
                                 // 更新seq
                                 self.server.client_seq_map.insert(cmd.name.clone(), cmd.seq);
                             }
-                            if let Some((sender, term)) = self
+                            if let Some((sender, term, name, seq, op)) = self
                                 .server
                                 .log_index_channel_map
                                 .remove(&apply_msg.command_index)
                             {
-                                if apply_msg.command_term == term {
+                                if apply_msg.command_term == term && cmd.name.eq(&name) && cmd.seq == seq {
                                     // 说明日志已经提交
                                     if !sender.is_canceled() {
                                         // 发送包含结果的 reply
@@ -221,17 +223,30 @@ impl Stream for KvServerFuture {
                                     // 说明失去领导地位
                                     if !sender.is_canceled() {
                                         // 发送丢失领导地位的 error reply
-                                        let reply = GetReply {
-                                            wrong_leader: true,
-                                            err: "lose leadership".to_owned(),
-                                            value: "".to_owned(),
-                                        };
-                                        sender.send(Reply::Get(reply)).unwrap_or_else(|_| {
-                                            error!(
-                                                "[Server {} apply_ch] send get reply error",
-                                                self.server.me
-                                            );
-                                        });
+                                        if op == 0 {
+                                            let reply = GetReply {
+                                                wrong_leader: true,
+                                                err: "lose leadership".to_owned(),
+                                                value: "".to_owned(),
+                                            };
+                                            sender.send(Reply::Get(reply)).unwrap_or_else(|_| {
+                                                error!(
+                                                    "[Server {} apply_ch] send get reply error",
+                                                    self.server.me
+                                                );
+                                            });
+                                        } else {
+                                            let reply = PutAppendReply {
+                                                wrong_leader: true,
+                                                err: "lose leadership".to_owned(),
+                                            };
+                                            sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
+                                                error!(
+                                                    "[Server {} apply_ch] send put reply error",
+                                                    self.server.me
+                                                );
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -254,12 +269,12 @@ impl Stream for KvServerFuture {
                                 // 更新seq
                                 self.server.client_seq_map.insert(cmd.name.clone(), cmd.seq);
                             }
-                            if let Some((sender, term)) = self
+                            if let Some((sender, term, name, seq, op)) = self
                                 .server
                                 .log_index_channel_map
                                 .remove(&apply_msg.command_index)
                             {
-                                if apply_msg.command_term == term {
+                                if apply_msg.command_term == term && cmd.name.eq(&name) && cmd.seq == seq {
                                     // 说明日志已经提交
                                     if !sender.is_canceled() {
                                         // 发送包含结果的 reply
@@ -278,16 +293,30 @@ impl Stream for KvServerFuture {
                                     // 说明失去领导地位
                                     if !sender.is_canceled() {
                                         // 发送丢失领导地位的 error reply
-                                        let reply = PutAppendReply {
-                                            wrong_leader: true,
-                                            err: "lose leadership".to_owned(),
-                                        };
-                                        sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
-                                            error!(
-                                                "[Server {} apply_ch] send put reply error",
-                                                self.server.me
-                                            );
-                                        });
+                                        if op == 0 {
+                                            let reply = GetReply {
+                                                wrong_leader: true,
+                                                err: "lose leadership".to_owned(),
+                                                value: "".to_owned(),
+                                            };
+                                            sender.send(Reply::Get(reply)).unwrap_or_else(|_| {
+                                                error!(
+                                                    "[Server {} apply_ch] send get reply error",
+                                                    self.server.me
+                                                );
+                                            });
+                                        } else {
+                                            let reply = PutAppendReply {
+                                                wrong_leader: true,
+                                                err: "lose leadership".to_owned(),
+                                            };
+                                            sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
+                                                error!(
+                                                    "[Server {} apply_ch] send put reply error",
+                                                    self.server.me
+                                                );
+                                            });
+                                        }
                                     }
                                 }
                             }
@@ -407,10 +436,12 @@ impl KvService for Node {
                 })
                 .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
                 .select(
-                    rx.map(|reply| match reply {
-                        Reply::Get(get_reply) => get_reply,
-                        Reply::PutAppend(_) => unreachable!(),
-                    })
+                    rx.map(move |reply|
+                        match reply {
+                            Reply::Get(get_reply) => get_reply,
+                            Reply::PutAppend(_) => unreachable!(),
+                        }
+                    )
                     .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
                 )
                 .map(|(reply, _)| reply)
@@ -439,10 +470,12 @@ impl KvService for Node {
                 })
                 .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
                 .select(
-                    rx.map(|reply| match reply {
-                        Reply::Get(_) => unreachable!(),
-                        Reply::PutAppend(put_append_reply) => put_append_reply,
-                    })
+                    rx.map(move |reply|
+                        match reply {
+                            Reply::Get(_) => unreachable!(),
+                            Reply::PutAppend(put_append_reply) => put_append_reply,
+                        }
+                    )
                     .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
                 )
                 .map(|(reply, _)| reply)

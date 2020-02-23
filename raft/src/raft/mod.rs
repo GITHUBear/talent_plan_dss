@@ -509,14 +509,16 @@ impl Raft {
                         if vote_cnt * 2 > group_num {
                             // 超过半数
                             // 向状态机发送 SuccessElection 消息
-                            tx.unbounded_send(ActionEv::SuccessElection(term))
-                                .map_err(|e| {
-                                    error!(
-                                        "[send_request_vote_all {}] send Success Election fail {}",
-                                        me, e
-                                    );
-                                })
-                                .unwrap();
+                            if !tx.is_closed() {
+                                tx.unbounded_send(ActionEv::SuccessElection(term))
+                                    .map_err(|e| {
+                                        error!(
+                                            "[send_request_vote_all {}] send Success Election fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            }
                             // stream 完成
                             ok(false)
                         } else {
@@ -527,14 +529,16 @@ impl Raft {
                         // 不同意原因1：reply.term > term
                         if reply.term > term {
                             // 向状态机发送 Fail 消息
-                            tx.unbounded_send(ActionEv::Fail(reply.term))
-                                .map_err(|e| {
-                                    error!(
-                                        "[send_request_vote_all {}] send ActionEv::Fail fail {}",
-                                        me, e
-                                    );
-                                })
-                                .unwrap();
+                            if !tx.is_closed() {
+                                tx.unbounded_send(ActionEv::Fail(reply.term))
+                                    .map_err(|e| {
+                                        error!(
+                                            "[send_request_vote_all {}] send ActionEv::Fail fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            }
                             // stream 完成
                             ok(false)
                         } else {
@@ -607,29 +611,33 @@ impl Raft {
                             "[send_heartbeat_all {}] StateFuture {}'s log match with me",
                             me, id
                         );
-                        tx.unbounded_send(ActionEv::UpdateIndex(
-                            term,
-                            id,
-                            Ok(prev_index + entries_len + 1),
-                        ))
-                        .map_err(|e| {
-                            error!(
-                                "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
-                                me, e
-                            );
-                        })
-                        .unwrap();
-                    } else {
-                        if reply.term > term {
-                            // 立即回到 follower 状态
-                            tx.unbounded_send(ActionEv::Fail(reply.term))
+                        if !tx.is_closed() {
+                            tx.unbounded_send(ActionEv::UpdateIndex(
+                                term,
+                                id,
+                                Ok(prev_index + entries_len + 1),
+                            ))
                                 .map_err(|e| {
                                     error!(
-                                        "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
+                                        "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
                                         me, e
                                     );
                                 })
-                                .unwrap();
+                                .unwrap_or_else(|_| ());
+                        }
+                    } else {
+                        if reply.term > term {
+                            // 立即回到 follower 状态
+                            if !tx.is_closed() {
+                                tx.unbounded_send(ActionEv::Fail(reply.term))
+                                    .map_err(|e| {
+                                        error!(
+                                            "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            }
                         } else {
                             // 说明是未匹配
                             // 发送更新 next_index 的消息到 StateFuture
@@ -637,18 +645,20 @@ impl Raft {
                                 "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
                                 me, id
                             );
-                            tx.unbounded_send(ActionEv::UpdateIndex(
-                                term,
-                                id,
-                                Err(reply.conflict_index as usize),
-                            ))
-                            .map_err(|e| {
-                                error!(
-                                    "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
-                                    me, e
-                                );
-                            })
-                            .unwrap();
+                            if !tx.is_closed() {
+                                tx.unbounded_send(ActionEv::UpdateIndex(
+                                    term,
+                                    id,
+                                    Err(reply.conflict_index as usize),
+                                ))
+                                    .map_err(|e| {
+                                        error!(
+                                            "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            }
                         }
                     }
                 }
@@ -700,7 +710,7 @@ impl Raft {
                 command_index: apply_idx as u64,
                 command_term: self.logs[apply_idx].term,
             };
-            self.apply_ch.unbounded_send(msg).unwrap();
+            self.apply_ch.unbounded_send(msg).unwrap_or_else(|_| error!("apply_ch closed"));
             self.last_applied += 1;
         }
     }
@@ -785,9 +795,11 @@ impl Stream for StateFuture {
                         info!("[StateFuture {}] get RequestVote event", self.raft.me);
                         let (reply, args_term_gtr) = self.raft.handle_request_vote(args);
                         let vote_granted = reply.vote_granted;
-                        tx.send(reply).unwrap_or_else(|_| {
-                            error!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
-                        });
+                        if !tx.is_canceled() {
+                            tx.send(reply).unwrap_or_else(|_| {
+                                error!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
+                            });
+                        }
                         // 2B: 现在 vote_granted 就不能完全表示 args.term > term 的情况了
                         // 故修改 handle_request_vote 的接口
                         if args_term_gtr || vote_granted {
@@ -801,12 +813,14 @@ impl Stream for StateFuture {
                         // 调用 Raft::handle_append_entries, 返回 reply
                         info!("[StateFuture {}] get AppendEntries event", self.raft.me);
                         let (reply, args_term_ge) = self.raft.handle_append_entries(args);
-                        tx.send(reply).unwrap_or_else(|_| {
-                            error!(
-                                "[StateFuture {}] send AppendEntriesReply error",
-                                self.raft.me
-                            );
-                        });
+                        if !tx.is_canceled() {
+                            tx.send(reply).unwrap_or_else(|_| {
+                                error!(
+                                    "[StateFuture {}] send AppendEntriesReply error",
+                                    self.raft.me
+                                );
+                            });
+                        }
                         if args_term_ge {
                             info!(
                                 "[StateFuture {}] After Handle AppendEntries => follower",
@@ -871,9 +885,11 @@ impl Stream for StateFuture {
                     }
                     ActionEv::StartCmd(cmd, tx) => {
                         let res = self.raft.start(cmd);
-                        tx.send(res).unwrap_or_else(|_| {
-                            error!("[StateFuture {}] send StartCmd result error", self.raft.me);
-                        });
+                        if !tx.is_canceled() {
+                            tx.send(res).unwrap_or_else(|_| {
+                                error!("[StateFuture {}] send StartCmd result error", self.raft.me);
+                            });
+                        }
                     }
                     ActionEv::Kill => {
                         // Stream 完成
@@ -1011,7 +1027,7 @@ impl Node {
                 .clone()
                 .unbounded_send(ActionEv::StartCmd(buf, tx))
                 .map_err(|_| ())
-                .unwrap();
+                .unwrap_or_else(|_| ());
         } else {
             return Err(Error::NotLeader);
         }
@@ -1057,11 +1073,12 @@ impl Node {
     /// threads you generated with this Raft Node.
     pub fn kill(&self) {
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(_handle) = machine {
-            self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
+        if let Some(handle) = machine {
+            self.msg_tx.unbounded_send(ActionEv::Kill)
+                .unwrap_or_else(|_| error!("Raft Kill Send Error"));
             // 这里如果使用了 join 等待线程结束，在测试结束后会等待较长一段时间
             // But why?
-            // handle.join().unwrap();
+            handle.join().unwrap();
         }
     }
 }
@@ -1080,7 +1097,7 @@ impl RaftService for Node {
                 .clone()
                 .unbounded_send(ActionEv::RequestVote(args, tx))
                 .map_err(|_| ())
-                .unwrap();
+                .unwrap_or_else(|_| ());
         }
         Box::new(rx.map_err(|_| labrpc::Error::Other("Request Vote Receive Error".to_owned())))
     }
@@ -1094,7 +1111,7 @@ impl RaftService for Node {
                 .clone()
                 .unbounded_send(ActionEv::AppendEntries(args, tx))
                 .map_err(|_| ())
-                .unwrap();
+                .unwrap_or_else(|_| ());
         }
         Box::new(rx.map_err(|_| labrpc::Error::Other("Append Entries Receive Error".to_owned())))
     }
