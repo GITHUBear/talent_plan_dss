@@ -1,12 +1,20 @@
 use crate::proto::kvraftpb::*;
 use crate::raft;
 
+use crate::raft::ApplyMsg;
+use futures::future::ok;
+use futures::prelude::*;
 use futures::sync::mpsc::{unbounded, UnboundedReceiver, UnboundedSender};
 use futures::sync::oneshot::{channel, Sender};
-use futures::prelude::*;
+use futures_timer::Delay;
 use labrpc::RpcFuture;
-use crate::raft::ApplyMsg;
 use std::collections::HashMap;
+use std::sync::{
+    atomic::{AtomicBool, AtomicU64, Ordering},
+    Arc, Mutex,
+};
+use std::thread;
+use std::time::Duration;
 
 pub enum Reply {
     Get(GetReply),
@@ -17,6 +25,7 @@ pub struct KvServer {
     pub rf: raft::Node,
     me: usize,
     // snapshot if log grows this big
+    #[allow(dead_code)]
     maxraftstate: Option<usize>,
     // Your definitions here.
     // 简易数据库
@@ -24,9 +33,9 @@ pub struct KvServer {
     // 保存一个 client 名到该客户端提交的操作的最大序列号的映射
     // 避免一个序列号的操作被 client 反复提交
     client_seq_map: HashMap<String, u64>,
-    // 保存一个 操作日志索引 到 相应操作请求的结果发送端 的映射
+    // 保存一个 操作日志索引 到 (相应操作请求的结果发送端,term) 的映射
     // 用于防止 get 和 put_append 方法的阻塞
-    log_index_channel_map: HashMap<u64, Sender<Reply>>,
+    log_index_channel_map: HashMap<u64, (Sender<Reply>, u64)>,
     // 传输 客户端调用事件 的发送端和接收端
     msg_rx: UnboundedReceiver<ActionEv>,
     msg_tx: UnboundedSender<ActionEv>,
@@ -45,23 +54,30 @@ impl KvServer {
 
         let (tx, apply_ch) = unbounded();
         let rf = raft::Raft::new(servers, me, persister, tx);
+        let node = raft::Node::new(rf);
+        let (msg_tx, msg_rx) = unbounded();
 
-        crate::your_code_here((rf, maxraftstate, apply_ch))
-    }
-}
+        KvServer {
+            rf: node,
+            me,
+            maxraftstate,
 
-impl KvServer {
-    /// Only for suppressing deadcode warnings.
-    #[doc(hidden)]
-    pub fn __suppress_deadcode(&mut self) {
-        let _ = &self.me;
-        let _ = &self.maxraftstate;
+            db: HashMap::new(),
+            client_seq_map: HashMap::new(),
+            log_index_channel_map: HashMap::new(),
+
+            msg_rx,
+            msg_tx,
+
+            apply_ch,
+        }
     }
 }
 
 enum ActionEv {
     GetRpc(GetRequest, Sender<Reply>),
     PutAppendRpc(PutAppendRequest, Sender<Reply>),
+    Kill,
 }
 
 struct KvServerFuture {
@@ -78,76 +94,88 @@ impl Stream for KvServerFuture {
             Ok(Async::Ready(Some(e))) => {
                 match e {
                     ActionEv::GetRpc(args, tx) => {
-                        let seq = self.server.client_seq_map.get(&args.name).unwrap_or(&0);
                         let cmd = Command {
                             op: 0,
                             key: args.key.clone(),
                             value: "".to_owned(),
+                            seq: args.seq,
+                            name: args.name.clone(),
                         };
-                        // 忽略客户端发来的更旧的seq
-                        if args.seq > seq {
-                            match self.server.rf.start(&cmd) {
-                                Ok((index, _)) => {
-                                    // 成功将 command 送入 raft
-                                    info!("[Server] cmd: {:?} start", &cmd);
-                                    // 更新 client_seq_map
-                                    self.server.client_seq_map.insert(args.name, args.seq);
-                                    // 保存 发送端
-                                    self.server.log_index_channel_map.insert(index, tx);
-                                },
-                                Err(_) => {
-                                    // 不是 leader, 立即发送 Reply
-                                    let reply = GetReply {
-                                        wrong_leader: true,
-                                        err: "Wrong Leader".to_owned(),
-                                        value: "".to_owned(),
-                                    };
+                        match self.server.rf.start(&cmd) {
+                            Ok((index, term)) => {
+                                // 成功将 command 送入 raft
+                                info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
+                                // 保存 发送端
+                                self.server.log_index_channel_map.insert(index, (tx, term));
+                            }
+                            Err(_) => {
+                                // 不是 leader, 立即发送 Reply
+                                let reply = GetReply {
+                                    wrong_leader: true,
+                                    err: "Wrong Leader".to_owned(),
+                                    value: "".to_owned(),
+                                };
+                                // 防止超时的客户端请求会drop掉接收端，导致出错
+                                if !tx.is_canceled() {
+                                    info!(
+                                        "[Server {}] Tell {} : I am not a leader ",
+                                        self.server.me, &args.name
+                                    );
                                     tx.send(Reply::Get(reply)).unwrap_or_else(|_| {
-                                        error!("[Server] Tell {} : I am not a leader ", &args.name);
+                                        error!("[Server {}] send get reply error", self.server.me);
                                     });
                                 }
                             }
                         }
-                    },
+                    }
                     ActionEv::PutAppendRpc(args, tx) => {
-                        let seq = self.server.client_seq_map.get(&args.name).unwrap_or(&0);
                         assert_ne!(args.op, 0);
                         let cmd = Command {
-                            op: args.op,
+                            op: args.op as u64,
                             key: args.key.clone(),
                             value: args.value.clone(),
+                            seq: args.seq,
+                            name: args.name.clone(),
                         };
-
-                        if args.seq > seq {
-                            match self.server.rf.start(&cmd) {
-                                Ok((index, _)) => {
-                                    // 成功将 command 送入 raft
-                                    info!("[Server] cmd: {:?} start", &cmd);
-                                    // 更新 client_seq_map
-                                    self.server.client_seq_map.insert(args.name, args.seq);
-                                    // 保存 发送端
-                                    self.server.log_index_channel_map.insert(index, tx);
-                                },
-                                Err(_) => {
-                                    // 不是 leader, 立即发送 Reply
-                                    let reply = PutAppendReply {
-                                        wrong_leader: true,
-                                        err: "Wrong Leader".to_owned(),
-                                    };
+                        match self.server.rf.start(&cmd) {
+                            Ok((index, term)) => {
+                                // 成功将 command 送入 raft
+                                info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
+                                // 保存 发送端
+                                self.server.log_index_channel_map.insert(index, (tx, term));
+                            }
+                            Err(_) => {
+                                // 不是 leader, 立即发送 Reply
+                                let reply = PutAppendReply {
+                                    wrong_leader: true,
+                                    err: "Wrong Leader".to_owned(),
+                                };
+                                // 防止超时的客户端请求会drop掉接收端，导致出错
+                                if !tx.is_canceled() {
+                                    info!(
+                                        "[Server {}] Tell {} : I am not a leader ",
+                                        self.server.me, &args.name
+                                    );
                                     tx.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
-                                        error!("[Server] Tell {} : I am not a leader ", &args.name);
+                                        error!(
+                                            "[Server {}] send put append reply error",
+                                            self.server.me
+                                        );
                                     });
                                 }
                             }
                         }
-                    },
+                    }
+                    ActionEv::Kill => {
+                        return Ok(Async::Ready(None));
+                    }
                 }
                 return Ok(Async::Ready(Some(())));
-            },
+            }
             Ok(Async::Ready(None)) => {
                 return Ok(Async::Ready(None));
-            },
-            Ok(Async::NotReady) => {},
+            }
+            Ok(Async::NotReady) => {}
             Err(_) => unreachable!(),
         }
         // apply_ch 到达事件
@@ -158,26 +186,122 @@ impl Stream for KvServerFuture {
                     match cmd.op {
                         0 => {
                             // Get
-                            if self.server.rf.is_leader() {
-
+                            let seq = self.server.client_seq_map.get(&cmd.name).unwrap_or(&0);
+                            if cmd.seq > *seq {
+                                // 更新seq
+                                self.server.client_seq_map.insert(cmd.name.clone(), cmd.seq);
                             }
-                        },
-                        1 => {
-                            // Put
-                        },
-                        2 => {
-                            // Append
-                        },
+                            if let Some((sender, term)) = self
+                                .server
+                                .log_index_channel_map
+                                .remove(&apply_msg.command_index)
+                            {
+                                if apply_msg.command_term == term {
+                                    // 说明日志已经提交
+                                    if !sender.is_canceled() {
+                                        // 发送包含结果的 reply
+                                        let reply = GetReply {
+                                            wrong_leader: false,
+                                            err: "".to_owned(),
+                                            value: self
+                                                .server
+                                                .db
+                                                .get(&cmd.key)
+                                                .unwrap_or(&("".to_owned()))
+                                                .clone(),
+                                        };
+                                        sender.send(Reply::Get(reply)).unwrap_or_else(|_| {
+                                            error!(
+                                                "[Server {} apply_ch] send get reply error",
+                                                self.server.me
+                                            );
+                                        });
+                                    }
+                                } else {
+                                    // 说明失去领导地位
+                                    if !sender.is_canceled() {
+                                        // 发送丢失领导地位的 error reply
+                                        let reply = GetReply {
+                                            wrong_leader: true,
+                                            err: "lose leadership".to_owned(),
+                                            value: "".to_owned(),
+                                        };
+                                        sender.send(Reply::Get(reply)).unwrap_or_else(|_| {
+                                            error!(
+                                                "[Server {} apply_ch] send get reply error",
+                                                self.server.me
+                                            );
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                        1 | 2 => {
+                            // Put & Append
+                            let seq = self.server.client_seq_map.get(&cmd.name).unwrap_or(&0);
+                            if cmd.seq > *seq {
+                                // 更新数据库
+                                if cmd.op == 1 {
+                                    self.server.db.insert(cmd.key.clone(), cmd.value.clone());
+                                } else {
+                                    let old_val = self
+                                        .server
+                                        .db
+                                        .entry(cmd.key.clone())
+                                        .or_insert("".to_owned());
+                                    old_val.push_str(&*(cmd.value.clone()));
+                                }
+                                // 更新seq
+                                self.server.client_seq_map.insert(cmd.name.clone(), cmd.seq);
+                            }
+                            if let Some((sender, term)) = self
+                                .server
+                                .log_index_channel_map
+                                .remove(&apply_msg.command_index)
+                            {
+                                if apply_msg.command_term == term {
+                                    // 说明日志已经提交
+                                    if !sender.is_canceled() {
+                                        // 发送包含结果的 reply
+                                        let reply = PutAppendReply {
+                                            wrong_leader: false,
+                                            err: "".to_owned(),
+                                        };
+                                        sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
+                                            error!(
+                                                "[Server {} apply_ch] send put reply error",
+                                                self.server.me
+                                            );
+                                        });
+                                    }
+                                } else {
+                                    // 说明失去领导地位
+                                    if !sender.is_canceled() {
+                                        // 发送丢失领导地位的 error reply
+                                        let reply = PutAppendReply {
+                                            wrong_leader: true,
+                                            err: "lose leadership".to_owned(),
+                                        };
+                                        sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
+                                            error!(
+                                                "[Server {} apply_ch] send put reply error",
+                                                self.server.me
+                                            );
+                                        });
+                                    }
+                                }
+                            }
+                        }
                         _ => unreachable!(),
                     }
                 }
-            },
+            }
             Ok(Async::Ready(None)) => {
                 return Ok(Async::Ready(None));
-            },
+            }
             Ok(Async::NotReady) => {
                 return Ok(Async::NotReady);
-            },
+            }
             Err(_) => unreachable!(),
         }
 
@@ -202,12 +326,28 @@ impl Stream for KvServerFuture {
 #[derive(Clone)]
 pub struct Node {
     // Your definitions here.
+    state_machine: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
+    current_term: Arc<AtomicU64>,
+    is_leader: Arc<AtomicBool>,
+    msg_tx: UnboundedSender<ActionEv>,
 }
 
 impl Node {
     pub fn new(kv: KvServer) -> Node {
         // Your code here.
-        crate::your_code_here(kv);
+        let current_term = Arc::clone(&(kv.rf.current_term));
+        let is_leader = Arc::clone(&(kv.rf.is_leader));
+        let msg_tx = kv.msg_tx.clone();
+        let state_future = KvServerFuture { server: kv };
+
+        let state_machine = thread::spawn(move || tokio::run(state_future.for_each(|_| ok(()))));
+
+        Node {
+            state_machine: Arc::new(Mutex::new(Some(state_machine))),
+            current_term,
+            is_leader,
+            msg_tx,
+        }
     }
 
     /// the tester calls Kill() when a KVServer instance won't
@@ -216,6 +356,11 @@ impl Node {
     /// turn off debug output from this instance.
     pub fn kill(&self) {
         // Your code here, if desired.
+        let machine = self.state_machine.lock().unwrap().take();
+        if let Some(_handle) = machine {
+            self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
+            // handle.join().unwrap();
+        }
     }
 
     /// The current term of this peer.
@@ -229,9 +374,12 @@ impl Node {
     }
 
     pub fn get_state(&self) -> raft::State {
+        let current_term = self.current_term.load(Ordering::SeqCst);
+        let is_leader = self.is_leader.load(Ordering::SeqCst);
         // Your code here.
         raft::State {
-            ..Default::default()
+            term: current_term,
+            is_leader,
         }
     }
 }
@@ -240,12 +388,65 @@ impl KvService for Node {
     // CAVEATS: Please avoid locking or sleeping here, it may jam the network.
     fn get(&self, arg: GetRequest) -> RpcFuture<GetReply> {
         // Your code here.
-        crate::your_code_here(arg)
+        let (tx, rx) = channel();
+
+        if !self.msg_tx.is_closed() {
+            self.msg_tx
+                .clone()
+                .unbounded_send(ActionEv::GetRpc(arg, tx))
+                .map_err(|_| ())
+                .unwrap();
+        }
+
+        Box::new(
+            Delay::new(Duration::from_millis(500))
+                .map(|_| GetReply {
+                    wrong_leader: true,
+                    err: "timeout".to_owned(),
+                    value: "".to_owned(),
+                })
+                .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
+                .select(
+                    rx.map(|reply| match reply {
+                        Reply::Get(get_reply) => get_reply,
+                        Reply::PutAppend(_) => unreachable!(),
+                    })
+                    .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
+                )
+                .map(|(reply, _)| reply)
+                .map_err(|(e, _)| e),
+        )
     }
 
     // CAVEATS: Please avoid locking or sleeping here, it may jam the network.
     fn put_append(&self, arg: PutAppendRequest) -> RpcFuture<PutAppendReply> {
         // Your code here.
-        crate::your_code_here(arg)
+        let (tx, rx) = channel();
+
+        if !self.msg_tx.is_closed() {
+            self.msg_tx
+                .clone()
+                .unbounded_send(ActionEv::PutAppendRpc(arg, tx))
+                .map_err(|_| ())
+                .unwrap();
+        }
+
+        Box::new(
+            Delay::new(Duration::from_millis(500))
+                .map(|_| PutAppendReply {
+                    wrong_leader: true,
+                    err: "timeout".to_owned(),
+                })
+                .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
+                .select(
+                    rx.map(|reply| match reply {
+                        Reply::Get(_) => unreachable!(),
+                        Reply::PutAppend(put_append_reply) => put_append_reply,
+                    })
+                    .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
+                )
+                .map(|(reply, _)| reply)
+                .map_err(|(e, _)| e),
+        )
     }
 }

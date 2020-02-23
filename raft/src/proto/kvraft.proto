@@ -42,4 +42,6 @@ message Command {
     uint64 op = 1;
     string key = 2;
     string value = 3;
+    uint64 seq = 4;
+    string name = 5;
 }

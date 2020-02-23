@@ -44,6 +44,7 @@ pub struct ApplyMsg {
     pub command_valid: bool,
     pub command: Vec<u8>,
     pub command_index: u64,
+    pub command_term: u64,
 }
 
 /// State of a raft peer.
@@ -184,8 +185,12 @@ impl Raft {
         // Your code here (2C).
         if let Ok(raft_state) = labcodec::decode(data) {
             let raft_state: RaftState = raft_state;
-            self.current_term.store(raft_state.current_term, Ordering::SeqCst);
-            self.voted_for = raft_state.voted_for.clone().map(|raft_state::VotedFor::Voted(n)| n);
+            self.current_term
+                .store(raft_state.current_term, Ordering::SeqCst);
+            self.voted_for = raft_state
+                .voted_for
+                .clone()
+                .map(|raft_state::VotedFor::Voted(n)| n);
             self.logs = raft_state.entries.clone();
         }
     }
@@ -693,6 +698,7 @@ impl Raft {
                 command_valid: true,
                 command: self.logs[apply_idx].command.clone(),
                 command_index: apply_idx as u64,
+                command_term: self.logs[apply_idx].term,
             };
             self.apply_ch.unbounded_send(msg).unwrap();
             self.last_applied += 1;

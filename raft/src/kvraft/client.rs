@@ -1,3 +1,4 @@
+use futures::Future;
 use std::fmt;
 use std::sync::atomic::{AtomicU64, Ordering};
 
@@ -13,8 +14,8 @@ pub struct Clerk {
     pub servers: Vec<KvClient>,
     // You will have to modify this struct.
     // get 和 put_append 的接口为 &self, 需要获得内部可变性
-    pub ex_leader: AtomicU64,    // 保存前一次成功得到 RPC 应答的 server id
-    pub seq: AtomicU64,          // 保存提交到服务端的请求的序列号，防止在同一个服务端提交多次同一个请求
+    pub ex_leader: AtomicU64, // 保存前一次成功得到 RPC 应答的 server id
+    pub seq: AtomicU64, // 保存提交到服务端的请求的序列号，防止在同一个服务端提交多次同一个请求
 }
 
 impl fmt::Debug for Clerk {
@@ -42,7 +43,7 @@ impl Clerk {
     // if let Some(reply) = self.servers[i].get(args).wait() { /* do something */ }
     pub fn get(&self, key: String) -> String {
         // You will have to modify this function.
-//        crate::your_code_here(key)
+        //        crate::your_code_here(key)
         let group_num = self.servers.len();
         let mut idx = self.ex_leader.load(Ordering::SeqCst);
         let cur_seq = self.seq.fetch_add(1, Ordering::SeqCst);
@@ -78,23 +79,19 @@ impl Clerk {
         let mut idx = self.ex_leader.load(Ordering::SeqCst);
         let cur_seq = self.seq.fetch_add(1, Ordering::SeqCst);
         let args = match op {
-            Op::Put(key, value) => {
-                PutAppendRequest {
-                    key,
-                    value,
-                    op: 1,
-                    seq: cur_seq,
-                    name: self.name.clone(),
-                }
+            Op::Put(key, value) => PutAppendRequest {
+                key,
+                value,
+                op: 1,
+                seq: cur_seq,
+                name: self.name.clone(),
             },
-            Op::Append(key, append) => {
-                PutAppendRequest {
-                    key,
-                    value: append,
-                    op: 2,
-                    seq: cur_seq,
-                    name: self.name.clone(),
-                }
+            Op::Append(key, append) => PutAppendRequest {
+                key,
+                value: append,
+                op: 2,
+                seq: cur_seq,
+                name: self.name.clone(),
             },
         };
         loop {
