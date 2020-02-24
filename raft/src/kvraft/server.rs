@@ -107,7 +107,9 @@ impl Stream for KvServerFuture {
                                 // 成功将 command 送入 raft
                                 info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
                                 // 保存 发送端
-                                self.server.log_index_channel_map.insert(index, (tx, term, args.name.clone(), args.seq, 0));
+                                self.server
+                                    .log_index_channel_map
+                                    .insert(index, (tx, term, args.name.clone(), args.seq, 0));
                             }
                             Err(_) => {
                                 // 不是 leader, 立即发送 Reply
@@ -143,7 +145,9 @@ impl Stream for KvServerFuture {
                                 // 成功将 command 送入 raft
                                 info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
                                 // 保存 发送端
-                                self.server.log_index_channel_map.insert(index, (tx, term, args.name.clone(), args.seq, 1));
+                                self.server
+                                    .log_index_channel_map
+                                    .insert(index, (tx, term, args.name.clone(), args.seq, 1));
                             }
                             Err(_) => {
                                 // 不是 leader, 立即发送 Reply
@@ -198,7 +202,10 @@ impl Stream for KvServerFuture {
                                 .log_index_channel_map
                                 .remove(&apply_msg.command_index)
                             {
-                                if apply_msg.command_term == term && cmd.name.eq(&name) && cmd.seq == seq {
+                                if apply_msg.command_term == term
+                                    && cmd.name.eq(&name)
+                                    && cmd.seq == seq
+                                {
                                     // 说明日志已经提交
                                     if !sender.is_canceled() {
                                         // 发送包含结果的 reply
@@ -240,12 +247,14 @@ impl Stream for KvServerFuture {
                                                 wrong_leader: true,
                                                 err: "lose leadership".to_owned(),
                                             };
-                                            sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
-                                                error!(
-                                                    "[Server {} apply_ch] send put reply error",
-                                                    self.server.me
-                                                );
-                                            });
+                                            sender.send(Reply::PutAppend(reply)).unwrap_or_else(
+                                                |_| {
+                                                    error!(
+                                                        "[Server {} apply_ch] send put reply error",
+                                                        self.server.me
+                                                    );
+                                                },
+                                            );
                                         }
                                     }
                                 }
@@ -263,7 +272,7 @@ impl Stream for KvServerFuture {
                                         .server
                                         .db
                                         .entry(cmd.key.clone())
-                                        .or_insert("".to_owned());
+                                        .or_insert_with(|| "".to_owned());
                                     old_val.push_str(&*(cmd.value.clone()));
                                 }
                                 // 更新seq
@@ -274,7 +283,10 @@ impl Stream for KvServerFuture {
                                 .log_index_channel_map
                                 .remove(&apply_msg.command_index)
                             {
-                                if apply_msg.command_term == term && cmd.name.eq(&name) && cmd.seq == seq {
+                                if apply_msg.command_term == term
+                                    && cmd.name.eq(&name)
+                                    && cmd.seq == seq
+                                {
                                     // 说明日志已经提交
                                     if !sender.is_canceled() {
                                         // 发送包含结果的 reply
@@ -310,12 +322,14 @@ impl Stream for KvServerFuture {
                                                 wrong_leader: true,
                                                 err: "lose leadership".to_owned(),
                                             };
-                                            sender.send(Reply::PutAppend(reply)).unwrap_or_else(|_| {
-                                                error!(
-                                                    "[Server {} apply_ch] send put reply error",
-                                                    self.server.me
-                                                );
-                                            });
+                                            sender.send(Reply::PutAppend(reply)).unwrap_or_else(
+                                                |_| {
+                                                    error!(
+                                                        "[Server {} apply_ch] send put reply error",
+                                                        self.server.me
+                                                    );
+                                                },
+                                            );
                                         }
                                     }
                                 }
@@ -386,9 +400,9 @@ impl Node {
     pub fn kill(&self) {
         // Your code here, if desired.
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(_handle) = machine {
+        if let Some(handle) = machine {
             self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
-            // handle.join().unwrap();
+            handle.join().unwrap();
         }
     }
 
@@ -436,12 +450,10 @@ impl KvService for Node {
                 })
                 .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
                 .select(
-                    rx.map(move |reply|
-                        match reply {
-                            Reply::Get(get_reply) => get_reply,
-                            Reply::PutAppend(_) => unreachable!(),
-                        }
-                    )
+                    rx.map(move |reply| match reply {
+                        Reply::Get(get_reply) => get_reply,
+                        Reply::PutAppend(_) => unreachable!(),
+                    })
                     .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
                 )
                 .map(|(reply, _)| reply)
@@ -470,12 +482,10 @@ impl KvService for Node {
                 })
                 .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
                 .select(
-                    rx.map(move |reply|
-                        match reply {
-                            Reply::Get(_) => unreachable!(),
-                            Reply::PutAppend(put_append_reply) => put_append_reply,
-                        }
-                    )
+                    rx.map(move |reply| match reply {
+                        Reply::Get(_) => unreachable!(),
+                        Reply::PutAppend(put_append_reply) => put_append_reply,
+                    })
                     .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
                 )
                 .map(|(reply, _)| reply)

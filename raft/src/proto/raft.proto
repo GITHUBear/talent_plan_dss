@@ -47,3 +47,13 @@ message RaftState {
     oneof voted_for {uint64 voted = 2;}
     repeated Log entries = 3;
 }
+
+// 定义 InstallSnapshot RPC 参数
+message InstallSnapshotArgs {
+
+}
+
+// 定义 InstallSnapshot RPC 返回值
+message InstallSnapshotReply {
+
+}

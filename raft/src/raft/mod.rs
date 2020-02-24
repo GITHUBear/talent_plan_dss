@@ -40,6 +40,8 @@ const ELECTION_TIMEOUT_END: u64 = 300;
 // 修复 test_figure_8_unreliable_2c 偶尔不能通过的问题
 const HEARTBEAT_TIMEOUT: u64 = 50;
 
+type HeartBeatReply = (Result<AppendEntriesReply>, usize, usize, usize);
+
 pub struct ApplyMsg {
     pub command_valid: bool,
     pub command: Vec<u8>,
@@ -191,7 +193,7 @@ impl Raft {
                 .voted_for
                 .clone()
                 .map(|raft_state::VotedFor::Voted(n)| n);
-            self.logs = raft_state.entries.clone();
+            self.logs = raft_state.entries;
         }
     }
 
@@ -224,7 +226,7 @@ impl Raft {
                 .map_err(Error::Rpc)
                 .then(move |res| {
                     if !tx.is_canceled() {
-                        tx.send(res).unwrap();
+                        tx.send(res).unwrap_or_else(|_| ());
                     }
                     ok(())
                 }),
@@ -234,11 +236,7 @@ impl Raft {
 
     // 2B: 修改 channel 中发送的值包含 server 编号、prev_log_index、entries 的长度
     // 便于 heartbeat 的发送者在接收到回应后更新指定的 next_index 和 match_index
-    fn send_heartbeat(
-        &self,
-        server: usize,
-        args: &AppendEntriesArgs,
-    ) -> Receiver<(Result<AppendEntriesReply>, usize, usize, usize)> {
+    fn send_heartbeat(&self, server: usize, args: &AppendEntriesArgs) -> Receiver<HeartBeatReply> {
         debug!(
             "[StateFuture {}] send AppendEntriesArgs: [\
             term: {}, index: {}, prev_log_index: {}, prev_log_term: {}, leader_commit: {} \
@@ -251,7 +249,7 @@ impl Raft {
             args.leader_commit,
             server
         );
-        let (tx, rx) = channel::<(Result<AppendEntriesReply>, usize, usize, usize)>();
+        let (tx, rx) = channel::<HeartBeatReply>();
         let peer = &self.peers[server];
         let prev_log_index = args.prev_log_index;
         let entries_len = args.entries.len();
@@ -261,7 +259,7 @@ impl Raft {
                 .then(move |res| {
                     if !tx.is_canceled() {
                         tx.send((res, server, prev_log_index as usize, entries_len))
-                            .unwrap();
+                            .unwrap_or_else(|_| ());
                     }
                     ok(())
                 }),
@@ -408,7 +406,7 @@ impl Raft {
         }
 
         let log_match = self.is_match(prev_term, prev_index);
-        let success = !(args.term < term || !log_match);
+        let success = args.term >= term && log_match;
         if success {
             if !args.entries.is_empty() {
                 // 匹配 且 entries 不为空
@@ -584,7 +582,7 @@ impl Raft {
 
         let me = self.me;
         // AppendEntries Reply 的接收端
-        let result_rxs: Vec<Receiver<(Result<AppendEntriesReply>, usize, usize, usize)>> = self
+        let result_rxs: Vec<Receiver<HeartBeatReply>> = self
             .peers
             .iter()
             .enumerate()
@@ -617,48 +615,46 @@ impl Raft {
                                 id,
                                 Ok(prev_index + entries_len + 1),
                             ))
+                            .map_err(|e| {
+                                error!(
+                                    "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                    me, e
+                                );
+                            })
+                            .unwrap_or_else(|_| ());
+                        }
+                    } else if reply.term > term {
+                        // 立即回到 follower 状态
+                        if !tx.is_closed() {
+                            tx.unbounded_send(ActionEv::Fail(reply.term))
                                 .map_err(|e| {
                                     error!(
-                                        "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                        "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
                                         me, e
                                     );
                                 })
                                 .unwrap_or_else(|_| ());
                         }
                     } else {
-                        if reply.term > term {
-                            // 立即回到 follower 状态
-                            if !tx.is_closed() {
-                                tx.unbounded_send(ActionEv::Fail(reply.term))
-                                    .map_err(|e| {
-                                        error!(
-                                            "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
-                                            me, e
-                                        );
-                                    })
-                                    .unwrap_or_else(|_| ());
-                            }
-                        } else {
-                            // 说明是未匹配
-                            // 发送更新 next_index 的消息到 StateFuture
-                            debug!(
-                                "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
-                                me, id
-                            );
-                            if !tx.is_closed() {
-                                tx.unbounded_send(ActionEv::UpdateIndex(
-                                    term,
-                                    id,
-                                    Err(reply.conflict_index as usize),
-                                ))
-                                    .map_err(|e| {
-                                        error!(
-                                            "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
-                                            me, e
-                                        );
-                                    })
-                                    .unwrap_or_else(|_| ());
-                            }
+                        // 说明是未匹配
+                        // 发送更新 next_index 的消息到 StateFuture
+                        debug!(
+                            "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
+                            me, id
+                        );
+                        if !tx.is_closed() {
+                            tx.unbounded_send(ActionEv::UpdateIndex(
+                                term,
+                                id,
+                                Err(reply.conflict_index as usize),
+                            ))
+                            .map_err(|e| {
+                                error!(
+                                    "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                    me, e
+                                );
+                            })
+                            .unwrap_or_else(|_| ());
                         }
                     }
                 }
@@ -710,7 +706,9 @@ impl Raft {
                 command_index: apply_idx as u64,
                 command_term: self.logs[apply_idx].term,
             };
-            self.apply_ch.unbounded_send(msg).unwrap_or_else(|_| error!("apply_ch closed"));
+            self.apply_ch
+                .unbounded_send(msg)
+                .unwrap_or_else(|_| error!("apply_ch closed"));
             self.last_applied += 1;
         }
     }
@@ -797,7 +795,10 @@ impl Stream for StateFuture {
                         let vote_granted = reply.vote_granted;
                         if !tx.is_canceled() {
                             tx.send(reply).unwrap_or_else(|_| {
-                                error!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
+                                error!(
+                                    "[StateFuture {}] send RequestVoteReply error",
+                                    self.raft.me
+                                );
                             });
                         }
                         // 2B: 现在 vote_granted 就不能完全表示 args.term > term 的情况了
@@ -1074,7 +1075,8 @@ impl Node {
     pub fn kill(&self) {
         let machine = self.state_machine.lock().unwrap().take();
         if let Some(handle) = machine {
-            self.msg_tx.unbounded_send(ActionEv::Kill)
+            self.msg_tx
+                .unbounded_send(ActionEv::Kill)
                 .unwrap_or_else(|_| error!("Raft Kill Send Error"));
             // 这里如果使用了 join 等待线程结束，在测试结束后会等待较长一段时间
             // But why?

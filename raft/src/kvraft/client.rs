@@ -48,7 +48,7 @@ impl Clerk {
         let mut idx = self.ex_leader.load(Ordering::SeqCst);
         let cur_seq = self.seq.fetch_add(1, Ordering::SeqCst);
         let args = GetRequest {
-            key: key.clone(),
+            key,
             seq: cur_seq,
             name: self.name.clone(),
         };
@@ -59,7 +59,7 @@ impl Clerk {
                     if reply.err.is_empty() {
                         // 在完成 commit 期间始终保持 leader 状态
                         self.ex_leader.store(idx, Ordering::SeqCst);
-                        return reply.value.clone();
+                        return reply.value;
                     }
                     // 发生 leader 转移
                 }
