@@ -34,6 +34,20 @@ message AppendEntriesReply {
     uint64 conflict_term = 4;
 }
 
+// 定义 InstallSnapshot RPC 参数
+message InstallSnapshotArgs {
+    uint64 term = 1;
+    uint64 leader_id = 2;
+    uint64 last_included_index = 3;
+    uint64 last_included_term = 4;
+    bytes data = 5;
+}
+
+// 定义 InstallSnapshot RPC 返回值
+message InstallSnapshotReply {
+    uint64 term = 1;
+}
+
 // 定义日志
 message Log {
     uint64 term = 1;                // Leader 收到指令时候的任期号
@@ -46,14 +60,6 @@ message RaftState {
     uint64 current_term = 1;
     oneof voted_for {uint64 voted = 2;}
     repeated Log entries = 3;
-}
-
-// 定义 InstallSnapshot RPC 参数
-message InstallSnapshotArgs {
-
-}
-
-// 定义 InstallSnapshot RPC 返回值
-message InstallSnapshotReply {
-
+    uint64 last_included_index = 4;
+    uint64 last_included_term = 5;
 }

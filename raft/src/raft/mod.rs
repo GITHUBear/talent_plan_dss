@@ -98,7 +98,6 @@ pub struct Raft {
     logs: Vec<Log>, // 每一个 log 包含指令和该指令关联的任期号
     // snapshot 需要持久化最后一个 log 的 index 和 term
     last_included_index: usize,
-    #[allow(dead_code)]
     last_included_term: u64,
 
     // 以下两项在服务器上经常变化
@@ -204,10 +203,30 @@ impl Raft {
             current_term,
             voted_for: self.voted_for.clone().map(raft_state::VotedFor::Voted),
             entries: self.logs.clone(),
+            last_included_index: self.last_included_index as u64,
+            last_included_term: self.last_included_term,
         };
         let mut data: Vec<u8> = vec![];
         labcodec::encode(&state, &mut data).unwrap();
         self.persister.save_raft_state(data);
+        // 3B: 更新 persist_size
+        let size = self.persister.raft_state().len() as u64;
+        self.persist_size.store(size, Ordering::SeqCst);
+    }
+
+    /// 保存 Raft 状态以及 snapshot
+    fn persist_state_and_snapshot(&mut self, snapshot: Vec<u8>) {
+        let current_term = self.current_term.load(Ordering::SeqCst);
+        let state = RaftState {
+            current_term,
+            voted_for: self.voted_for.clone().map(raft_state::VotedFor::Voted),
+            entries: self.logs.clone(),
+            last_included_index: self.last_included_index as u64,
+            last_included_term: self.last_included_term,
+        };
+        let mut data: Vec<u8> = vec![];
+        labcodec::encode(&state, &mut data).unwrap();
+        self.persister.save_state_and_snapshot(data, snapshot);
         // 3B: 更新 persist_size
         let size = self.persister.raft_state().len() as u64;
         self.persist_size.store(size, Ordering::SeqCst);
@@ -229,6 +248,8 @@ impl Raft {
                 .clone()
                 .map(|raft_state::VotedFor::Voted(n)| n);
             self.logs = raft_state.entries;
+            self.last_included_index = raft_state.last_included_index as usize;
+            self.last_included_term = raft_state.last_included_term;
         }
     }
 
@@ -811,6 +832,8 @@ enum ActionEv {
     UpdateIndex(u64, usize, std::result::Result<usize, usize>),
     /// start 命令
     StartCmd(Vec<u8>, Sender<Result<(u64, u64)>>),
+    /// 本机 snapshot
+    LocalSnapshot(usize, Vec<u8>),
     /// 关闭状态机
     Kill,
 }
@@ -953,6 +976,18 @@ impl Stream for StateFuture {
                         tx.send(res).unwrap_or_else(|_| {
                             debug!("[StateFuture {}] send StartCmd result error", self.raft.me);
                         });
+                    }
+                    ActionEv::LocalSnapshot(applied_index, snapshot) => {
+                        let rel_index = self.raft.relative_index(applied_index);
+                        match rel_index {
+                            Some(index) => {
+                                self.raft.logs.drain(..index);
+                                self.raft.last_included_index = applied_index;
+                                self.raft.last_included_term = self.raft.logs[0].term;
+                                self.raft.persist_state_and_snapshot(snapshot);
+                            },
+                            None => {},
+                        }
                     }
                     ActionEv::Kill => {
                         // Stream 完成
@@ -1108,16 +1143,12 @@ impl Node {
     /// The current term of this peer.
     pub fn term(&self) -> u64 {
         // Your code here.
-        // Example:
-        // self.raft.term
         self.current_term.load(Ordering::SeqCst)
     }
 
     /// Whether this peer believes it is the leader.
     pub fn is_leader(&self) -> bool {
         // Your code here.
-        // Example:
-        // self.raft.leader_id == self.id
         self.is_leader.load(Ordering::SeqCst)
     }
 
@@ -1153,8 +1184,23 @@ impl Node {
                 .unbounded_send(ActionEv::Kill)
                 .unwrap_or_else(|_| ());
             // 这里如果使用了 join 等待线程结束，在测试结束后会等待较长一段时间
-            // But why?
+            // 因为在 send_heartbeat_all 与 send_request_vote_all 有新的线程尚未结束
+            // 尚未实现优雅停机
             //            handle.join().unwrap();
+        }
+    }
+
+    /// 来自顶层的 KvServer 调用，本地进行 snapshot
+    ///
+    /// applied_index 为本次 snapshot 的最后一个日志索引
+    /// snapshot 就是本次的快照
+    pub fn local_snapshot(&self, applied_index: usize, snapshot: Vec<u8>) {
+        if !self.msg_tx.is_closed() {
+            self.msg_tx
+                .clone()
+                .unbounded_send(ActionEv::LocalSnapshot(applied_index, snapshot))
+                .map_err(|_| ())
+                .unwrap_or_else(|_| ());
         }
     }
 }

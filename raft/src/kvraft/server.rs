@@ -51,13 +51,13 @@ impl KvServer {
         maxraftstate: Option<usize>,
     ) -> KvServer {
         // You may need initialization code here.
-
         let (tx, apply_ch) = unbounded();
+        let raw_snapshot = persister.snapshot();
         let rf = raft::Raft::new(servers, me, persister, tx);
         let node = raft::Node::new(rf);
         let (msg_tx, msg_rx) = unbounded();
 
-        KvServer {
+        let mut kv_server = KvServer {
             rf: node,
             me,
             maxraftstate,
@@ -70,7 +70,10 @@ impl KvServer {
             msg_tx,
 
             apply_ch,
-        }
+        };
+
+        kv_server.read_snapshot_from_raw(&raw_snapshot);
+        kv_server
     }
 }
 
@@ -100,10 +103,24 @@ impl KvServer {
                     return;
                 }
                 let snapshot = self.create_snapshot();
-                // TODO: 调用 Node 的 local_snapshot 方法进行本地日志压缩
-
+                self.rf.local_snapshot(applied_index as usize, snapshot);
             },
             None => return,
+        }
+    }
+
+    // 在创建 KvServer 之初，通过 snapshot 恢复状态
+    fn read_snapshot_from_raw(&mut self, raw: &[u8]) {
+        if raw.is_empty() {
+            return;
+        }
+
+        if let Ok(snapshot) = labcodec::decode(&raw) {
+            let snapshot: Snapshot = snapshot;
+            self.db = snapshot.keys.into_iter()
+                .zip(snapshot.values.into_iter()).collect();
+            self.client_seq_map = snapshot.client_names.into_iter()
+                .zip(snapshot.seqs.into_iter()).collect();
         }
     }
 }
@@ -222,6 +239,8 @@ impl Stream for KvServerFuture {
             Ok(Async::Ready(Some(apply_msg))) => {
                 if let Ok(cmd) = labcodec::decode(&apply_msg.command) {
                     let cmd: Command = cmd;
+                    // 检查是否需要 snapshot
+                    self.server.need_snapshot(apply_msg.command_index);
                     match cmd.op {
                         0 => {
                             // Get
