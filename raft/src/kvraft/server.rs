@@ -104,7 +104,7 @@ impl KvServer {
                 }
                 let snapshot = self.create_snapshot();
                 self.rf.local_snapshot(applied_index as usize, snapshot);
-            },
+            }
             None => return,
         }
     }
@@ -117,10 +117,16 @@ impl KvServer {
 
         if let Ok(snapshot) = labcodec::decode(&raw) {
             let snapshot: Snapshot = snapshot;
-            self.db = snapshot.keys.into_iter()
-                .zip(snapshot.values.into_iter()).collect();
-            self.client_seq_map = snapshot.client_names.into_iter()
-                .zip(snapshot.seqs.into_iter()).collect();
+            self.db = snapshot
+                .keys
+                .into_iter()
+                .zip(snapshot.values.into_iter())
+                .collect();
+            self.client_seq_map = snapshot
+                .client_names
+                .into_iter()
+                .zip(snapshot.seqs.into_iter())
+                .collect();
         }
     }
 }
@@ -237,7 +243,10 @@ impl Stream for KvServerFuture {
         // apply_ch 到达事件
         match self.server.apply_ch.poll() {
             Ok(Async::Ready(Some(apply_msg))) => {
-                if let Ok(cmd) = labcodec::decode(&apply_msg.command) {
+                // 先检查 apply_msg 是否是一个 snapshot
+                if !apply_msg.command_valid {
+                    self.server.read_snapshot_from_raw(&apply_msg.command);
+                } else if let Ok(cmd) = labcodec::decode(&apply_msg.command) {
                     let cmd: Command = cmd;
                     // 检查是否需要 snapshot
                     self.server.need_snapshot(apply_msg.command_index);
@@ -452,9 +461,9 @@ impl Node {
     pub fn kill(&self) {
         // Your code here, if desired.
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(_handle) = machine {
+        if let Some(handle) = machine {
             self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
-//            handle.join().unwrap();
+            handle.join().unwrap();
         }
     }
 

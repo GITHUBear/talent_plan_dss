@@ -1,5 +1,5 @@
 use std::{
-    cmp::min,
+    cmp::{min, max},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -40,7 +40,14 @@ const ELECTION_TIMEOUT_END: u64 = 300;
 // 修复 test_figure_8_unreliable_2c 偶尔不能通过的问题
 const HEARTBEAT_TIMEOUT: u64 = 50;
 
-type HeartBeatReply = (Result<AppendEntriesReply>, usize, usize, usize);
+type LogSyncReply = (Result<AppendEntriesReply>, usize, usize, usize);
+type SnapSyncReply = (Result<InstallSnapshotReply>, usize, usize);
+
+// 用一个枚举类型来管理两种心跳同步
+enum SyncReply {
+    Log(LogSyncReply),
+    Snapshot(SnapSyncReply),
+}
 
 pub struct ApplyMsg {
     pub command_valid: bool,
@@ -292,10 +299,10 @@ impl Raft {
 
     // 2B: 修改 channel 中发送的值包含 server 编号、prev_log_index、entries 的长度
     // 便于 heartbeat 的发送者在接收到回应后更新指定的 next_index 和 match_index
-    fn send_heartbeat(&self, server: usize, args: &AppendEntriesArgs) -> Receiver<HeartBeatReply> {
+    fn send_heartbeat(&self, server: usize, args: &AppendEntriesArgs) -> Receiver<SyncReply> {
         debug!(
             "[StateFuture {}] send AppendEntriesArgs: [\
-            term: {}, index: {}, prev_log_index: {}, prev_log_term: {}, leader_commit: {} \
+            term: {}, leader_id: {}, prev_log_index: {}, prev_log_term: {}, leader_commit: {} \
             ] to {}",
             self.me,
             args.term,
@@ -305,7 +312,7 @@ impl Raft {
             args.leader_commit,
             server
         );
-        let (tx, rx) = channel::<HeartBeatReply>();
+        let (tx, rx) = channel::<SyncReply>();
         let peer = &self.peers[server];
         let prev_log_index = args.prev_log_index;
         let entries_len = args.entries.len();
@@ -314,7 +321,47 @@ impl Raft {
                 .map_err(Error::Rpc)
                 .then(move |res| {
                     if !tx.is_canceled() {
-                        tx.send((res, server, prev_log_index as usize, entries_len))
+                        tx.send(SyncReply::Log((
+                            res,
+                            server,
+                            prev_log_index as usize,
+                            entries_len,
+                        )))
+                        .unwrap_or_else(|_| ());
+                    }
+                    ok(())
+                }),
+        );
+        rx
+    }
+
+    // 3B: send InstallSnapshot RPC 到指定的 server
+    // 返回的接收端将负责接收本 RPC 的回复，server 和 last_included_index 来更新 match_index 和 next_index
+    fn send_install_snapshot(
+        &self,
+        server: usize,
+        args: &InstallSnapshotArgs,
+    ) -> Receiver<SyncReply> {
+        debug!(
+            "[StateFuture {}] send InstallSnapshotArgs: [\
+            term: {}, leader_id: {}, last_included_index: {}, last_included_term: {}]\
+            to {}",
+            self.me,
+            args.term,
+            args.leader_id,
+            args.last_included_index,
+            args.last_included_term,
+            server
+        );
+        let (tx, rx) = channel::<SyncReply>();
+        let peer = &self.peers[server];
+        let last_included_index = args.last_included_index;
+        peer.spawn(
+            peer.install_snapshot(args)
+                .map_err(Error::Rpc)
+                .then(move |res| {
+                    if !tx.is_canceled() {
+                        tx.send(SyncReply::Snapshot((res, server, last_included_index as usize)))
                             .unwrap_or_else(|_| ());
                     }
                     ok(())
@@ -382,8 +429,8 @@ impl Raft {
             // 因为旧 leader 的 term 一定会比新 leader 小，一定不可能 append 成功
             return true;
         }
-        let args_prev_index = rel_index.unwrap();
-        match self.logs.get(args_prev_index) {
+        let rel_index = rel_index.unwrap();
+        match self.logs.get(rel_index) {
             Some(log) => {
                 assert_eq!(log.index, args_prev_index as u64);
                 log.term == args_prev_term
@@ -460,6 +507,7 @@ impl Raft {
             // 同意投票, 更新 voted_for
             self.voted_for = Some(args.candidate_id);
         }
+        self.persist();
 
         (RequestVoteReply { term, vote_granted }, args.term > term)
     }
@@ -498,6 +546,7 @@ impl Raft {
                     prev_index as usize + args.entries.len(),
                 );
             }
+            self.persist();
         }
 
         if log_match {
@@ -543,6 +592,55 @@ impl Raft {
                 args.term >= term,
             )
         }
+    }
+
+    /// 处理 RPC InstallSnapshot 请求, 返回 Reply
+    fn handle_install_snapshot(&mut self, args: InstallSnapshotArgs) -> (InstallSnapshotReply, bool) {
+        let last_index = args.last_included_index;
+        let last_term = args.last_included_term;
+        let term = self.current_term.load(Ordering::SeqCst);
+
+        if args.term > term {
+            self.current_term.store(args.term, Ordering::SeqCst);
+        }
+        // success 表示是否能成功的安装本快照
+        let success = args.term >= term && last_index > (self.last_included_index as u64);
+        if success {
+            if last_index < (self.absolute_index(self.logs.len() - 1) as u64) {
+                self.logs.drain(..self.relative_index(last_index as usize).unwrap());
+            } else {
+                // 说明现有 log 已经被 snapshot 全部覆盖
+                self.logs = vec![Log {
+                    term: last_term,
+                    index: last_index,
+                    command: vec![],
+                }];
+            }
+            // 更新并持久化 snapshot
+            self.last_included_index = last_index as usize;
+            self.last_included_term = last_term;
+            self.persist_state_and_snapshot(args.data.clone());
+            // 不同于 append entries 的 commit_index 和 last_applied 的更新
+            // install snapshot 情况下非常简单
+            self.commit_index = max(self.commit_index, last_index as usize);
+            self.last_applied = max(self.last_applied, last_index as usize);
+
+            let msg = ApplyMsg {
+                command_valid: false,
+                command: args.data,
+                // 以下两项无关紧要
+                command_index: 0,
+                command_term: 0,
+            };
+            self.apply_ch.unbounded_send(msg).unwrap_or_else(|_| ());
+        }
+
+        (
+            InstallSnapshotReply {
+                term,
+            },
+            args.term >= term
+        )
     }
 
     /// 向所有 peers 发送投票请求
@@ -660,13 +758,24 @@ impl Raft {
         }
     }
 
+    /// 帮助 send_heartbeat_all 计算发送给 server 的 InstallSnapshot RPC 参数
+    fn set_install_snapshot_arg(&self, term: u64) -> InstallSnapshotArgs {
+        InstallSnapshotArgs {
+            term,
+            leader_id: self.me as u64,
+            last_included_index: self.last_included_index as u64,
+            last_included_term: self.last_included_term,
+            data: self.persister.snapshot(),
+        }
+    }
+
     /// 向所有 peers 发送 AppendEntries RPC
     fn send_heartbeat_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
 
         let me = self.me;
         // AppendEntries Reply 的接收端
-        let result_rxs: Vec<Receiver<HeartBeatReply>> = self
+        let result_rxs: Vec<Receiver<SyncReply>> = self
             .peers
             .iter()
             .enumerate()
@@ -674,69 +783,116 @@ impl Raft {
                 // 筛除自己
                 *id != me
             })
-            .map(|(id, _)| self.send_heartbeat(id, &self.set_append_entries_arg(term, id)))
+            .map(|(id, _)| {
+                if self.next_index[id] <= self.last_included_index {
+                    // 需要的 next_index 已经包含了在了本节点的 snapshot 中
+                    // 发送 snapshot
+                    self.send_install_snapshot(id, &self.set_install_snapshot_arg(term))
+                } else {
+                    // 照常发送 append entries
+                    self.send_heartbeat(id, &self.set_append_entries_arg(term, id))
+                }
+            })
             .collect();
 
         let tx = self.msg_tx.clone();
         let stream = futures::stream::futures_unordered(result_rxs)
-            .for_each(move |(reply, id, prev_index, entries_len)| {
-                if let Ok(reply) = reply {
-                    info!(
-                        "[send_heartbeat_all {}] get AppendEntries reply from StateFuture {}: {:?}",
-                        me, id, reply
-                    );
+            .for_each(move |sync_reply| {
+                match sync_reply {
+                    SyncReply::Log((reply, id, prev_index, entries_len)) => {
+                        if let Ok(reply) = reply {
+                            info!(
+                                "[send_heartbeat_all {}] get AppendEntries reply from StateFuture {}: {:?}",
+                                me, id, reply
+                            );
 
-                    if reply.success {
-                        // 说明日志匹配且本机term大于等于对方term
-                        // 因为 move 的限制发送更新 match_index 和 next_index 的消息到 StateFuture
-                        debug!(
-                            "[send_heartbeat_all {}] StateFuture {}'s log match with me",
-                            me, id
-                        );
-                        tx.unbounded_send(ActionEv::UpdateIndex(
-                            term,
-                            id,
-                            Ok(prev_index + entries_len + 1),
-                        ))
-                        .map_err(|e| {
-                            debug!(
-                                "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
-                                me, e
-                            );
-                        })
-                        .unwrap_or_else(|_| ());
-                    } else if reply.term > term {
-                        // 立即回到 follower 状态
-                        tx.unbounded_send(ActionEv::Fail(reply.term))
-                            .map_err(|e| {
+                            if reply.success {
+                                // 说明日志匹配且本机term大于等于对方term
+                                // 因为 move 的限制发送更新 match_index 和 next_index 的消息到 StateFuture
                                 debug!(
-                                    "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
-                                    me, e
+                                    "[send_heartbeat_all {}] StateFuture {}'s log match with me",
+                                    me, id
                                 );
-                            })
-                            .unwrap_or_else(|_| ());
-                    } else {
-                        // 说明是未匹配
-                        // 发送更新 next_index 的消息到 StateFuture
-                        debug!(
-                            "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
-                            me, id
-                        );
-                        tx.unbounded_send(ActionEv::UpdateIndex(
-                            term,
-                            id,
-                            Err(reply.conflict_index as usize),
-                        ))
-                        .map_err(|e| {
-                            debug!(
-                                "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
-                                me, e
+                                tx.unbounded_send(ActionEv::UpdateIndex(
+                                    term,
+                                    id,
+                                    Ok(prev_index + entries_len + 1),
+                                ))
+                                    .map_err(|e| {
+                                        debug!(
+                                            "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            } else if reply.term > term {
+                                // 立即回到 follower 状态
+                                tx.unbounded_send(ActionEv::Fail(reply.term))
+                                    .map_err(|e| {
+                                        debug!(
+                                            "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            } else {
+                                // 说明是未匹配
+                                // 发送更新 next_index 的消息到 StateFuture
+                                debug!(
+                                    "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
+                                    me, id
+                                );
+                                tx.unbounded_send(ActionEv::UpdateIndex(
+                                    term,
+                                    id,
+                                    Err(reply.conflict_index as usize),
+                                ))
+                                    .map_err(|e| {
+                                        debug!(
+                                            "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            }
+                        }
+                        ok(())
+                    },
+                    SyncReply::Snapshot((reply, id, last_index)) => {
+                        if let Ok(reply) = reply {
+                            info!(
+                                "[send_heartbeat_all {}] get InstallSnapshot reply from StateFuture {}: {:?}",
+                                me, id, reply
                             );
-                        })
-                        .unwrap_or_else(|_| ());
+                            if reply.term > term {
+                                // 立即回到 follower 状态
+                                tx.unbounded_send(ActionEv::Fail(reply.term))
+                                    .map_err(|e| {
+                                        debug!(
+                                            "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            } else {
+                                // 更新 match_index 和 next_index
+                                tx.unbounded_send(ActionEv::UpdateIndex(
+                                    term,
+                                    id,
+                                    Ok(last_index + 1),
+                                ))
+                                    .map_err(|e| {
+                                        debug!(
+                                            "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                            me, e
+                                        );
+                                    })
+                                    .unwrap_or_else(|_| ());
+                            }
+                        }
+                        ok(())
                     }
                 }
-                ok(())
             })
             .map_err(|_| ());
 
@@ -820,6 +976,8 @@ enum ActionEv {
     RequestVote(RequestVoteArgs, Sender<RequestVoteReply>),
     /// 节点接收到来自其他节点的 AppendEntries RPC
     AppendEntries(AppendEntriesArgs, Sender<AppendEntriesReply>),
+    /// 节点接收到来自其他节点的 InstallSnapshot RPC
+    InstallSnapshot(InstallSnapshotArgs, Sender<InstallSnapshotReply>),
     /// 在一次选举当中获胜 包含获胜任期
     SuccessElection(u64),
     /// 在一次选举当中失败 包含导致失败的发送者任期
@@ -923,6 +1081,26 @@ impl Stream for StateFuture {
                             self.raft.apply_msg();
                         }
                     }
+                    ActionEv::InstallSnapshot(args, tx) => {
+                        // 调用 Raft::handle_install_snapshot, 返回 reply
+                        info!("[StateFuture {}] get InstallSnapshot event", self.raft.me);
+                        let (reply, args_term_ge) = self.raft.handle_install_snapshot(args);
+                        tx.send(reply).unwrap_or_else(|_| {
+                            debug!(
+                                "[StateFuture {}] send InstallSnapshotReply error",
+                                self.raft.me
+                            );
+                        });
+                        if args_term_ge {
+                            info!(
+                                "[StateFuture {}] After Handle InstallSnapshot => follower",
+                                self.raft.me
+                            );
+                            self.raft.be_follower();
+                            self.timeout.reset(StateFuture::rand_election_timeout());
+                            self.timeout_ev = TimeoutEv::Election;
+                        }
+                    }
                     ActionEv::SuccessElection(term) => {
                         info!("[StateFuture {}] get SuccessElection event", self.raft.me);
                         // 如果接收到 SuccessElection 的时候
@@ -985,8 +1163,8 @@ impl Stream for StateFuture {
                                 self.raft.last_included_index = applied_index;
                                 self.raft.last_included_term = self.raft.logs[0].term;
                                 self.raft.persist_state_and_snapshot(snapshot);
-                            },
-                            None => {},
+                            }
+                            None => {}
                         }
                     }
                     ActionEv::Kill => {
@@ -1236,5 +1414,18 @@ impl RaftService for Node {
                 .unwrap_or_else(|_| ());
         }
         Box::new(rx.map_err(|_| labrpc::Error::Other("Append Entries Receive Error".to_owned())))
+    }
+
+    fn install_snapshot(&self, args: InstallSnapshotArgs) -> RpcFuture<InstallSnapshotReply> {
+        let (tx, rx) = channel();
+
+        if !self.msg_tx.is_closed() {
+            self.msg_tx
+                .clone()
+                .unbounded_send(ActionEv::InstallSnapshot(args, tx))
+                .map_err(|_| ())
+                .unwrap_or_else(|_| ());
+        }
+        Box::new(rx.map_err(|_| labrpc::Error::Other("Install Snapshot Receive Error".to_owned())))
     }
 }
