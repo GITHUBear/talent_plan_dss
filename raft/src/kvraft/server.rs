@@ -26,7 +26,6 @@ pub struct KvServer {
     pub rf: raft::Node,
     me: usize,
     // snapshot if log grows this big
-    #[allow(dead_code)]
     maxraftstate: Option<usize>,
     // Your definitions here.
     // 简易数据库
@@ -75,10 +74,39 @@ impl KvServer {
     }
 }
 
-//impl KvServer {
-//    //
-//    fn
-//}
+impl KvServer {
+    /// 创建 snapshot，保存 db 和 client_seq_map 的数据
+    fn create_snapshot(&self) -> Vec<u8> {
+        let mut data = vec![];
+        let snapshot = Snapshot {
+            keys: self.db.keys().map(|k| k.clone()).collect(),
+            values: self.db.values().map(|v| v.clone()).collect(),
+            client_names: self.client_seq_map.keys().map(|k| k.clone()).collect(),
+            seqs: self.client_seq_map.values().map(|v| v.clone()).collect(),
+        };
+
+        labcodec::encode(&snapshot, &mut data).unwrap_or_else(|_| ());
+        data
+    }
+
+    /// 判断是否需要进行 snapshot
+    ///
+    /// applied_index 保存了本次 snapshot 的最后一个日志索引
+    fn need_snapshot(&self, applied_index: u64) {
+        match self.maxraftstate {
+            Some(limit) => {
+                if self.rf.persist_size() < (limit * 8 / 10) as u64 {
+                    // 小于最大阈值的 80%，不进行 snapshot
+                    return;
+                }
+                let snapshot = self.create_snapshot();
+                // TODO: 调用 Node 的 local_snapshot 方法进行本地日志压缩
+
+            },
+            None => return,
+        }
+    }
+}
 
 enum ActionEv {
     GetRpc(GetRequest, Sender<Reply>),

@@ -79,6 +79,10 @@ pub struct Raft {
     peers: Vec<RaftClient>,
     // Object to hold this peer's persisted state
     persister: Box<dyn Persister>,
+    // 3B: 由于 KvServer 无法直接访问 persister
+    // 并且每次 apply 都把自己的 db 数据向下发送给 node 性能太差
+    // 所以考虑设置一个原子量记录 persister 中的数据量大小
+    persist_size: Arc<AtomicU64>,
     // this peer's index into peers[]
     me: usize,
     //    state: Arc<State>,
@@ -152,6 +156,7 @@ impl Raft {
         let mut rf = Raft {
             peers,
             persister,
+            persist_size: Arc::new(AtomicU64::new(raft_state.len() as u64)),
             me,
             //            state: Arc::default(),
             role: Role::Follower,
@@ -203,6 +208,9 @@ impl Raft {
         let mut data: Vec<u8> = vec![];
         labcodec::encode(&state, &mut data).unwrap();
         self.persister.save_raft_state(data);
+        // 3B: 更新 persist_size
+        let size = self.persister.raft_state().len() as u64;
+        self.persist_size.store(size, Ordering::SeqCst);
     }
 
     /// restore previously persisted state.
@@ -1027,6 +1035,7 @@ pub struct Node {
     state_machine: Arc<Mutex<Option<thread::JoinHandle<()>>>>,
     pub current_term: Arc<AtomicU64>,
     pub is_leader: Arc<AtomicBool>,
+    persist_size: Arc<AtomicU64>,
     msg_tx: UnboundedSender<ActionEv>,
 }
 
@@ -1037,6 +1046,7 @@ impl Node {
         info!("[Node::new] node {} init", raft.me);
         let current_term = Arc::clone(&raft.current_term);
         let is_leader = Arc::clone(&raft.is_leader);
+        let persist_size = Arc::clone(&raft.persist_size);
         let msg_tx = raft.msg_tx.clone();
         let state_future = StateFuture::new(raft);
 
@@ -1046,6 +1056,7 @@ impl Node {
             state_machine: Arc::new(Mutex::new(Some(handle))),
             current_term,
             is_leader,
+            persist_size,
             msg_tx,
         }
     }
@@ -1116,6 +1127,15 @@ impl Node {
             term: self.term(),
             is_leader: self.is_leader(),
         }
+    }
+
+    /// 获得 persister 中的数据量大小
+    ///
+    /// 需要注意的是 persister 实际数据量改变和 persist_size 改变不保证原子性
+    /// 所以访问到的可能是数据改变之前的数据量，所以在判断是否需要 snapshot 的时候
+    /// 需要设定一个比最大阈值还要低的触发值，如 80%-90%
+    pub fn persist_size(&self) -> u64 {
+        self.persist_size.load(Ordering::SeqCst)
     }
 
     /// the tester calls kill() when a Raft instance won't be

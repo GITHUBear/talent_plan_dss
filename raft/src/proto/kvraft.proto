@@ -37,6 +37,7 @@ message GetReply {
     string value = 3;
 }
 
+// Raft 中复制的日志
 message Command {
     // 0 = Get, 1 = Put, 2 = Append
     uint64 op = 1;
@@ -44,4 +45,12 @@ message Command {
     string value = 3;
     uint64 seq = 4;
     string name = 5;
+}
+
+// server 端保存的 snapshot 信息
+message Snapshot {
+    repeated string keys = 1;
+    repeated string values = 2;
+    repeated string client_names = 3;
+    repeated uint64 seqs = 4;
 }
