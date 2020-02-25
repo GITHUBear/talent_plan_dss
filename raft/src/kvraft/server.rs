@@ -75,6 +75,11 @@ impl KvServer {
     }
 }
 
+//impl KvServer {
+//    //
+//    fn
+//}
+
 enum ActionEv {
     GetRpc(GetRequest, Sender<Reply>),
     PutAppendRpc(PutAppendRequest, Sender<Reply>),
@@ -400,9 +405,9 @@ impl Node {
     pub fn kill(&self) {
         // Your code here, if desired.
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(handle) = machine {
+        if let Some(_handle) = machine {
             self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
-            handle.join().unwrap();
+//            handle.join().unwrap();
         }
     }
 

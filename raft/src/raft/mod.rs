@@ -92,6 +92,10 @@ pub struct Raft {
     voted_for: Option<u64>, // candidateId that received vote in current term
     current_term: Arc<AtomicU64>,
     logs: Vec<Log>, // 每一个 log 包含指令和该指令关联的任期号
+    // snapshot 需要持久化最后一个 log 的 index 和 term
+    last_included_index: usize,
+    #[allow(dead_code)]
+    last_included_term: u64,
 
     // 以下两项在服务器上经常变化
     commit_index: usize,
@@ -105,6 +109,25 @@ pub struct Raft {
     msg_rx: UnboundedReceiver<ActionEv>,
 
     apply_ch: UnboundedSender<ApplyMsg>,
+}
+
+// 在 3B 部分需要几个方法来实现 logs 的索引变换
+impl Raft {
+    /// 输入 logs 的相对索引，转换为计入 snapshot 的绝对索引
+    fn absolute_index(&self, index: usize) -> usize {
+        index + self.last_included_index
+    }
+
+    /// 输入计入 snapshot 的绝对索引，返回一个 logs 的相对索引
+    /// 由于可能得到负的索引，所以考虑返回一个 Option 包装的结果
+    /// 如果返回了 None，表示计算结果是无效的负值
+    fn relative_index(&self, index: usize) -> Option<usize> {
+        if index >= self.last_included_index {
+            Some(index - self.last_included_index)
+        } else {
+            None
+        }
+    }
 }
 
 impl Raft {
@@ -143,6 +166,10 @@ impl Raft {
                 index: 0,
                 command: vec![],
             }],
+
+            // 均初始化为 0，意指 dummy log 已经被 snapshot 包含
+            last_included_index: 0,
+            last_included_term: 0,
 
             commit_index: 0,
             last_applied: 0,
@@ -268,7 +295,8 @@ impl Raft {
     }
 
     fn start(&mut self, command: Vec<u8>) -> Result<(u64, u64)> {
-        let index = self.logs.len();
+        // 日志索引应该是绝对索引，需要转换
+        let index = self.absolute_index(self.logs.len());
         let term = self.current_term.load(Ordering::SeqCst);
         let is_leader = self.is_leader.load(Ordering::SeqCst);
         // Your code here (2B).
@@ -297,6 +325,7 @@ impl Raft {
     /// args_last_index 是 Caller 最后一项日志的 index
     fn is_newer(&self, args_last_term: u64, args_last_index: u64) -> bool {
         // 初始化时添加了一个 dummy log，可以直接 unwrap
+        // 由于 snapshot 后还是会保留最后一个 log，所以这里使用 last() 还是安全的
         let log = self.logs.last().unwrap();
         let (self_last_term, self_last_index) = (log.term, log.index);
 
@@ -314,9 +343,20 @@ impl Raft {
     /// args_prev_term 是 Caller 希望匹配的日志 term
     /// args_prev_index 是 Caller 希望匹配的日志 index
     fn is_match(&self, args_prev_term: u64, args_prev_index: u64) -> bool {
-        match self.logs.get(args_prev_index as usize) {
+        // args_prev_index 是绝对索引，访问 logs 需要相对索引，需要转换
+        let rel_index = self.relative_index(args_prev_index as usize);
+        // 考虑到脑裂问题的存在，存在于一个网络分区中的旧 leader 在恢复后，
+        // 有可能会向新 leader 所在的分区发送 AppendEntries 请求，会执行 is_match 函数
+        // 这样就有可能匹配新分区中已经 snapshot 的 log，导致访问负索引
+        if rel_index.is_none() {
+            // 直接返回 true，其实这里返回 false 也可以
+            // 因为旧 leader 的 term 一定会比新 leader 小，一定不可能 append 成功
+            return true;
+        }
+        let args_prev_index = rel_index.unwrap();
+        match self.logs.get(args_prev_index) {
             Some(log) => {
-                assert_eq!(log.index, args_prev_index);
+                assert_eq!(log.index, args_prev_index as u64);
                 log.term == args_prev_term
             }
             None => {
@@ -344,7 +384,8 @@ impl Raft {
 
     fn be_leader(&mut self) {
         // 2B: 添加 next_index 和 match_index 的初始化
-        let log_len = self.logs.len();
+        // next_index 显然也是绝对索引，需要转换
+        let log_len = self.absolute_index(self.logs.len());
         for index in self.next_index.iter_mut() {
             *index = log_len;
         }
@@ -397,6 +438,7 @@ impl Raft {
     /// 处理 RPC AppendEntries 请求, 返回 Reply 和一个bool值表示 args.term 是否大于等于 term
     fn handle_append_entries(&mut self, mut args: AppendEntriesArgs) -> (AppendEntriesReply, bool) {
         // AppendEntriesArgs { term, leader_id }
+        // 此处 prev_index 是由调用者传来的绝对索引
         let prev_index = args.prev_log_index;
         let prev_term = args.prev_log_term;
         let term = self.current_term.load(Ordering::SeqCst);
@@ -404,14 +446,18 @@ impl Raft {
         if args.term > term {
             self.current_term.store(args.term, Ordering::SeqCst);
         }
-
+        // 这里传入绝对索引没有问题，接口约定一致
         let log_match = self.is_match(prev_term, prev_index);
         let success = args.term >= term && log_match;
         if success {
             if !args.entries.is_empty() {
                 // 匹配 且 entries 不为空
                 // 这里没有再搜索冲突位置，直接截取 prev_index + 1 长度的 log
-                self.logs.truncate(prev_index as usize + 1);
+                // 访问 logs 需要使用相对索引
+                let rel_index = self.relative_index(prev_index as usize);
+                // success 判断应该保证相对索引为正
+                assert!(rel_index.is_some());
+                self.logs.truncate(rel_index.unwrap() + 1);
                 self.logs.append(&mut args.entries);
             }
             // 匹配, 并在可能加入了新的条目后, 判断 leader 发来的 commit_index
@@ -419,6 +465,7 @@ impl Raft {
                 // 将 commit_index 更新为 args.leader_commit 和新日志条目索引值中较小的一个
                 self.commit_index = min(
                     args.leader_commit as usize,
+                    // 这里的确应该使用绝对索引
                     prev_index as usize + args.entries.len(),
                 );
             }
@@ -435,27 +482,33 @@ impl Raft {
                 args.term >= term,
             )
         } else {
-            let (conflict_index, conflict_term) = match self.logs.get(prev_index as usize) {
+            // 同上理由，需要转换为相对索引
+            let rel_index = self.relative_index(prev_index as usize);
+            assert!(rel_index.is_some());
+            let prev_index = rel_index.unwrap();
+            let (conflict_index, conflict_term) = match self.logs.get(prev_index) {
                 Some(log) => {
                     // 越过所有那个任期冲突的所有日志条目,找到该任期最早的日志索引
                     let mut index = prev_index;
                     for i in (0..=prev_index).rev() {
                         if self.logs[i as usize].term != log.term {
                             index = i + 1;
+                            break;
                         }
                     }
-                    (index, log.term)
+                    // 转换为绝对索引
+                    (self.absolute_index(index), log.term)
                 }
                 None => {
                     // 说明请求者的 log数量 比本节点的 log 多
-                    (self.logs.len() as u64, 0)
+                    (self.absolute_index(self.logs.len()), 0)
                 }
             };
             (
                 AppendEntriesReply {
                     term,
                     success,
-                    conflict_index,
+                    conflict_index: conflict_index as u64,
                     conflict_term,
                 },
                 args.term >= term,
@@ -466,6 +519,7 @@ impl Raft {
     /// 向所有 peers 发送投票请求
     fn send_request_vote_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
+        // 使用 last() 是安全的
         let log = self.logs.last().unwrap();
         let args = RequestVoteArgs {
             term,
@@ -507,16 +561,14 @@ impl Raft {
                         if vote_cnt * 2 > group_num {
                             // 超过半数
                             // 向状态机发送 SuccessElection 消息
-                            if !tx.is_closed() {
-                                tx.unbounded_send(ActionEv::SuccessElection(term))
-                                    .map_err(|e| {
-                                        error!(
-                                            "[send_request_vote_all {}] send Success Election fail {}",
-                                            me, e
-                                        );
-                                    })
-                                    .unwrap_or_else(|_| ());
-                            }
+                            tx.unbounded_send(ActionEv::SuccessElection(term))
+                                .map_err(|e| {
+                                    debug!(
+                                        "[send_request_vote_all {}] send Success Election fail {}",
+                                        me, e
+                                    );
+                                })
+                                .unwrap_or_else(|_| ());
                             // stream 完成
                             ok(false)
                         } else {
@@ -527,16 +579,14 @@ impl Raft {
                         // 不同意原因1：reply.term > term
                         if reply.term > term {
                             // 向状态机发送 Fail 消息
-                            if !tx.is_closed() {
-                                tx.unbounded_send(ActionEv::Fail(reply.term))
-                                    .map_err(|e| {
-                                        error!(
-                                            "[send_request_vote_all {}] send ActionEv::Fail fail {}",
-                                            me, e
-                                        );
-                                    })
-                                    .unwrap_or_else(|_| ());
-                            }
+                            tx.unbounded_send(ActionEv::Fail(reply.term))
+                                .map_err(|e| {
+                                    debug!(
+                                        "[send_request_vote_all {}] send ActionEv::Fail fail {}",
+                                        me, e
+                                    );
+                                })
+                                .unwrap_or_else(|_| ());
                             // stream 完成
                             ok(false)
                         } else {
@@ -558,12 +608,17 @@ impl Raft {
     /// 帮助 send_heartbeat_all 计算发送给 server 的 AppendEntries RPC 参数
     fn set_append_entries_arg(&self, term: u64, server: usize) -> AppendEntriesArgs {
         let prev_log_index = self.next_index[server] - 1;
-        let prev_log_term = self.logs[prev_log_index].term;
+        // next_index 中保存的绝对索引，需要换算为相对索引
+        // 这里要求在调用此函数时事先检查 prev_log_index 是否不落在 snapshot 范围内
+        let rel_index = self.relative_index(prev_log_index);
+        assert!(rel_index.is_some());
+        let rel_index = rel_index.unwrap();
+        let prev_log_term = self.logs[rel_index].term;
 
         let entries = if self.next_index[server] > self.match_index[server] + 1 {
             Vec::with_capacity(0)
         } else {
-            Vec::from(&self.logs[(prev_log_index + 1)..])
+            Vec::from(&self.logs[(rel_index + 1)..])
         };
 
         AppendEntriesArgs {
@@ -609,32 +664,28 @@ impl Raft {
                             "[send_heartbeat_all {}] StateFuture {}'s log match with me",
                             me, id
                         );
-                        if !tx.is_closed() {
-                            tx.unbounded_send(ActionEv::UpdateIndex(
-                                term,
-                                id,
-                                Ok(prev_index + entries_len + 1),
-                            ))
+                        tx.unbounded_send(ActionEv::UpdateIndex(
+                            term,
+                            id,
+                            Ok(prev_index + entries_len + 1),
+                        ))
+                        .map_err(|e| {
+                            debug!(
+                                "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                me, e
+                            );
+                        })
+                        .unwrap_or_else(|_| ());
+                    } else if reply.term > term {
+                        // 立即回到 follower 状态
+                        tx.unbounded_send(ActionEv::Fail(reply.term))
                             .map_err(|e| {
-                                error!(
-                                    "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                debug!(
+                                    "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
                                     me, e
                                 );
                             })
                             .unwrap_or_else(|_| ());
-                        }
-                    } else if reply.term > term {
-                        // 立即回到 follower 状态
-                        if !tx.is_closed() {
-                            tx.unbounded_send(ActionEv::Fail(reply.term))
-                                .map_err(|e| {
-                                    error!(
-                                        "[send_heartbeat_all {}] send ActionEv::Fail fail {}",
-                                        me, e
-                                    );
-                                })
-                                .unwrap_or_else(|_| ());
-                        }
                     } else {
                         // 说明是未匹配
                         // 发送更新 next_index 的消息到 StateFuture
@@ -642,20 +693,18 @@ impl Raft {
                             "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
                             me, id
                         );
-                        if !tx.is_closed() {
-                            tx.unbounded_send(ActionEv::UpdateIndex(
-                                term,
-                                id,
-                                Err(reply.conflict_index as usize),
-                            ))
-                            .map_err(|e| {
-                                error!(
-                                    "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
-                                    me, e
-                                );
-                            })
-                            .unwrap_or_else(|_| ());
-                        }
+                        tx.unbounded_send(ActionEv::UpdateIndex(
+                            term,
+                            id,
+                            Err(reply.conflict_index as usize),
+                        ))
+                        .map_err(|e| {
+                            debug!(
+                                "[send_heartbeat_all {}] send ActionEv::UpdateIndex fail {}",
+                                me, e
+                            );
+                        })
+                        .unwrap_or_else(|_| ());
                     }
                 }
                 ok(())
@@ -669,7 +718,8 @@ impl Raft {
     fn update_commit_index(&mut self) {
         // 1. 大多数的matchIndex[i] ≥ N成立
         let mut tmp_match_index = self.match_index.clone();
-        tmp_match_index[self.me] = self.logs.len() - 1;
+        // 由于 match_index 中存储的也是绝对索引，所以需要转换
+        tmp_match_index[self.me] = self.absolute_index(self.logs.len()) - 1;
         tmp_match_index.sort_unstable();
 
         let group_num = self.peers.len();
@@ -679,10 +729,18 @@ impl Raft {
         let current_term = self.current_term.load(Ordering::SeqCst);
         let new_commit = tmp_match_index
             .into_iter()
-            .filter(|n|
+            .filter(|n| {
                 // 2. N > commitIndex
                 // 3. log[N].term == currentTerm
-                *n > self.commit_index && self.logs[*n].term == current_term)
+                // 访问 logs 使用相对索引，转换
+                let rel_index = self.relative_index(*n);
+                match rel_index {
+                    Some(rel_index) => {
+                        *n > self.commit_index && self.logs[rel_index].term == current_term
+                    }
+                    None => false,
+                }
+            })
             .max();
 
         if let Some(n) = new_commit {
@@ -700,15 +758,20 @@ impl Raft {
     fn apply_msg(&mut self) {
         while self.last_applied < self.commit_index {
             let apply_idx = self.last_applied + 1;
+            // 转换为相对索引
+            let rel_index = self.relative_index(apply_idx);
+            if rel_index.is_none() {
+                self.last_applied += 1;
+                continue;
+            }
+            let rel_index = rel_index.unwrap();
             let msg = ApplyMsg {
                 command_valid: true,
-                command: self.logs[apply_idx].command.clone(),
+                command: self.logs[rel_index].command.clone(),
                 command_index: apply_idx as u64,
-                command_term: self.logs[apply_idx].term,
+                command_term: self.logs[rel_index].term,
             };
-            self.apply_ch
-                .unbounded_send(msg)
-                .unwrap_or_else(|_| error!("apply_ch closed"));
+            self.apply_ch.unbounded_send(msg).unwrap_or_else(|_| ());
             self.last_applied += 1;
         }
     }
@@ -793,14 +856,9 @@ impl Stream for StateFuture {
                         info!("[StateFuture {}] get RequestVote event", self.raft.me);
                         let (reply, args_term_gtr) = self.raft.handle_request_vote(args);
                         let vote_granted = reply.vote_granted;
-                        if !tx.is_canceled() {
-                            tx.send(reply).unwrap_or_else(|_| {
-                                error!(
-                                    "[StateFuture {}] send RequestVoteReply error",
-                                    self.raft.me
-                                );
-                            });
-                        }
+                        tx.send(reply).unwrap_or_else(|_| {
+                            debug!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
+                        });
                         // 2B: 现在 vote_granted 就不能完全表示 args.term > term 的情况了
                         // 故修改 handle_request_vote 的接口
                         if args_term_gtr || vote_granted {
@@ -814,14 +872,12 @@ impl Stream for StateFuture {
                         // 调用 Raft::handle_append_entries, 返回 reply
                         info!("[StateFuture {}] get AppendEntries event", self.raft.me);
                         let (reply, args_term_ge) = self.raft.handle_append_entries(args);
-                        if !tx.is_canceled() {
-                            tx.send(reply).unwrap_or_else(|_| {
-                                error!(
-                                    "[StateFuture {}] send AppendEntriesReply error",
-                                    self.raft.me
-                                );
-                            });
-                        }
+                        tx.send(reply).unwrap_or_else(|_| {
+                            debug!(
+                                "[StateFuture {}] send AppendEntriesReply error",
+                                self.raft.me
+                            );
+                        });
                         if args_term_ge {
                             info!(
                                 "[StateFuture {}] After Handle AppendEntries => follower",
@@ -886,11 +942,9 @@ impl Stream for StateFuture {
                     }
                     ActionEv::StartCmd(cmd, tx) => {
                         let res = self.raft.start(cmd);
-                        if !tx.is_canceled() {
-                            tx.send(res).unwrap_or_else(|_| {
-                                error!("[StateFuture {}] send StartCmd result error", self.raft.me);
-                            });
-                        }
+                        tx.send(res).unwrap_or_else(|_| {
+                            debug!("[StateFuture {}] send StartCmd result error", self.raft.me);
+                        });
                     }
                     ActionEv::Kill => {
                         // Stream 完成
@@ -1074,13 +1128,13 @@ impl Node {
     /// threads you generated with this Raft Node.
     pub fn kill(&self) {
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(handle) = machine {
+        if let Some(_handle) = machine {
             self.msg_tx
                 .unbounded_send(ActionEv::Kill)
-                .unwrap_or_else(|_| error!("Raft Kill Send Error"));
+                .unwrap_or_else(|_| ());
             // 这里如果使用了 join 等待线程结束，在测试结束后会等待较长一段时间
             // But why?
-            handle.join().unwrap();
+            //            handle.join().unwrap();
         }
     }
 }
