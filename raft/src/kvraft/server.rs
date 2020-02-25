@@ -248,8 +248,6 @@ impl Stream for KvServerFuture {
                     self.server.read_snapshot_from_raw(&apply_msg.command);
                 } else if let Ok(cmd) = labcodec::decode(&apply_msg.command) {
                     let cmd: Command = cmd;
-                    // 检查是否需要 snapshot
-                    self.server.need_snapshot(apply_msg.command_index);
                     match cmd.op {
                         0 => {
                             // Get
@@ -398,6 +396,8 @@ impl Stream for KvServerFuture {
                         }
                         _ => unreachable!(),
                     }
+                    // 检查是否需要 snapshot
+                    self.server.need_snapshot(apply_msg.command_index);
                 }
             }
             Ok(Async::Ready(None)) => {
