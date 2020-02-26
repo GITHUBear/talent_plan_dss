@@ -82,10 +82,10 @@ impl KvServer {
     fn create_snapshot(&self) -> Vec<u8> {
         let mut data = vec![];
         let snapshot = Snapshot {
-            keys: self.db.keys().map(|k| k.clone()).collect(),
-            values: self.db.values().map(|v| v.clone()).collect(),
-            client_names: self.client_seq_map.keys().map(|k| k.clone()).collect(),
-            seqs: self.client_seq_map.values().map(|v| v.clone()).collect(),
+            keys: self.db.keys().cloned().collect(),
+            values: self.db.values().cloned().collect(),
+            client_names: self.client_seq_map.keys().cloned().collect(),
+            seqs: self.client_seq_map.values().copied().collect(),
         };
 
         labcodec::encode(&snapshot, &mut data).unwrap_or_else(|_| ());
@@ -96,16 +96,13 @@ impl KvServer {
     ///
     /// applied_index 保存了本次 snapshot 的最后一个日志索引
     fn need_snapshot(&self, applied_index: u64) {
-        match self.maxraftstate {
-            Some(limit) => {
-                if self.rf.persist_size() < (limit * 8 / 10) as u64 {
-                    // 小于最大阈值的 80%，不进行 snapshot
-                    return;
-                }
-                let snapshot = self.create_snapshot();
-                self.rf.local_snapshot(applied_index as usize, snapshot);
+        if let Some(limit) = self.maxraftstate {
+            if self.rf.persist_size() < (limit * 8 / 10) as u64 {
+                // 小于最大阈值的 80%，不进行 snapshot
+                return;
             }
-            None => return,
+            let snapshot = self.create_snapshot();
+            self.rf.local_snapshot(applied_index as usize, snapshot);
         }
     }
 
@@ -461,9 +458,9 @@ impl Node {
     pub fn kill(&self) {
         // Your code here, if desired.
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(handle) = machine {
+        if let Some(_handle) = machine {
             self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
-            handle.join().unwrap();
+            //            handle.join().unwrap();
         }
     }
 

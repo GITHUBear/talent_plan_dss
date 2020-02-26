@@ -1,5 +1,5 @@
 use std::{
-    cmp::{min, max},
+    cmp::{max, min},
     sync::{
         atomic::{AtomicBool, AtomicU64, Ordering},
         Arc, Mutex,
@@ -361,8 +361,12 @@ impl Raft {
                 .map_err(Error::Rpc)
                 .then(move |res| {
                     if !tx.is_canceled() {
-                        tx.send(SyncReply::Snapshot((res, server, last_included_index as usize)))
-                            .unwrap_or_else(|_| ());
+                        tx.send(SyncReply::Snapshot((
+                            res,
+                            server,
+                            last_included_index as usize,
+                        )))
+                        .unwrap_or_else(|_| ());
                     }
                     ok(())
                 }),
@@ -595,7 +599,10 @@ impl Raft {
     }
 
     /// 处理 RPC InstallSnapshot 请求, 返回 Reply
-    fn handle_install_snapshot(&mut self, args: InstallSnapshotArgs) -> (InstallSnapshotReply, bool) {
+    fn handle_install_snapshot(
+        &mut self,
+        args: InstallSnapshotArgs,
+    ) -> (InstallSnapshotReply, bool) {
         let last_index = args.last_included_index;
         let last_term = args.last_included_term;
         let term = self.current_term.load(Ordering::SeqCst);
@@ -607,7 +614,8 @@ impl Raft {
         let success = args.term >= term && last_index > (self.last_included_index as u64);
         if success {
             if last_index < (self.absolute_index(self.logs.len() - 1) as u64) {
-                self.logs.drain(..self.relative_index(last_index as usize).unwrap());
+                self.logs
+                    .drain(..self.relative_index(last_index as usize).unwrap());
             } else {
                 // 说明现有 log 已经被 snapshot 全部覆盖
                 self.logs = vec![Log {
@@ -635,12 +643,7 @@ impl Raft {
             self.apply_ch.unbounded_send(msg).unwrap_or_else(|_| ());
         }
 
-        (
-            InstallSnapshotReply {
-                term,
-            },
-            args.term >= term
-        )
+        (InstallSnapshotReply { term }, args.term >= term)
     }
 
     /// 向所有 peers 发送投票请求
@@ -1157,14 +1160,11 @@ impl Stream for StateFuture {
                     }
                     ActionEv::LocalSnapshot(applied_index, snapshot) => {
                         let rel_index = self.raft.relative_index(applied_index);
-                        match rel_index {
-                            Some(index) => {
-                                self.raft.logs.drain(..index);
-                                self.raft.last_included_index = applied_index;
-                                self.raft.last_included_term = self.raft.logs[0].term;
-                                self.raft.persist_state_and_snapshot(snapshot);
-                            }
-                            None => {}
+                        if let Some(index) = rel_index {
+                            self.raft.logs.drain(..index);
+                            self.raft.last_included_index = applied_index;
+                            self.raft.last_included_term = self.raft.logs[0].term;
+                            self.raft.persist_state_and_snapshot(snapshot);
                         }
                     }
                     ActionEv::Kill => {
