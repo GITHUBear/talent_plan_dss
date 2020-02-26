@@ -458,9 +458,11 @@ impl Node {
     pub fn kill(&self) {
         // Your code here, if desired.
         let machine = self.state_machine.lock().unwrap().take();
-        if let Some(_handle) = machine {
-            self.msg_tx.unbounded_send(ActionEv::Kill).unwrap();
-            //            handle.join().unwrap();
+        if let Some(handle) = machine {
+            self.msg_tx
+                .unbounded_send(ActionEv::Kill)
+                .unwrap_or_else(|_| ());
+            handle.join().unwrap();
         }
     }
 

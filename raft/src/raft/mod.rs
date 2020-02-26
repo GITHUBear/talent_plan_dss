@@ -34,16 +34,16 @@ use crate::proto::raftpb::*;
 
 const ELECTION_TIMEOUT_START: u64 = 150;
 const ELECTION_TIMEOUT_END: u64 = 300;
-// 将原先的 150 修改为 50，按照 Raft Paper Heart
-// 广播时间（broadcastTime） << 选举超时时间（electionTimeout）
-// heartbeat超时需要比选举超时小一个数量级
-// 修复 test_figure_8_unreliable_2c 偶尔不能通过的问题
+// Change 100 to 50, according to Raft Paper broadcastTime << electionTimeout
+// The heartbeat timeout needs to be an order of magnitude smaller
+// than the election timeout.
+// Fix the problem that test_figure_8_unreliable_2c fails occasionally
 const HEARTBEAT_TIMEOUT: u64 = 50;
 
 type LogSyncReply = (Result<AppendEntriesReply>, usize, usize, usize);
 type SnapSyncReply = (Result<InstallSnapshotReply>, usize, usize);
 
-// 用一个枚举类型来管理两种心跳同步
+// Use one enumeration type to manage two heartbeat synchronizations.
 enum SyncReply {
     Log(LogSyncReply),
     Snapshot(SnapSyncReply),
@@ -86,9 +86,12 @@ pub struct Raft {
     peers: Vec<RaftClient>,
     // Object to hold this peer's persisted state
     persister: Box<dyn Persister>,
-    // 3B: 由于 KvServer 无法直接访问 persister
-    // 并且每次 apply 都把自己的 db 数据向下发送给 node 性能太差
-    // 所以考虑设置一个原子量记录 persister 中的数据量大小
+    // 3B: Since KvServer cannot directly access the persister
+    // and each apply sends its own db data down to the node,
+    // the performance is too poor.
+    //
+    // Therefore, consider setting an atomic value to
+    // hold the amount of data in the persister.
     persist_size: Arc<AtomicU64>,
     // this peer's index into peers[]
     me: usize,
@@ -99,21 +102,23 @@ pub struct Raft {
     role: Role, // the role of a node
     is_leader: Arc<AtomicBool>,
 
-    // 以下三项在服务器上持久存在
+    // The following five items persist on the server.
     voted_for: Option<u64>, // candidateId that received vote in current term
     current_term: Arc<AtomicU64>,
-    logs: Vec<Log>, // 每一个 log 包含指令和该指令关联的任期号
-    // snapshot 需要持久化最后一个 log 的 index 和 term
+    // Each log contains the command and the term number
+    // associated with the command.
+    logs: Vec<Log>,
+    // Snapshot needs to persist the index and term of the last log.
     last_included_index: usize,
     last_included_term: u64,
 
-    // 以下两项在服务器上经常变化
+    // The following two items change frequently on the server.
     commit_index: usize,
     last_applied: usize,
 
-    // 成为 Leader 后开始维护
+    // Become a Leader and start maintenance.
     next_index: Vec<usize>,
-    match_index: Vec<usize>, // 成为 leader 后初始化为 0
+    match_index: Vec<usize>, // Initialize to 0 after becoming leader.
 
     msg_tx: UnboundedSender<ActionEv>,
     msg_rx: UnboundedReceiver<ActionEv>,
@@ -121,16 +126,19 @@ pub struct Raft {
     apply_ch: UnboundedSender<ApplyMsg>,
 }
 
-// 在 3B 部分需要几个方法来实现 logs 的索引变换
+// Several methods are needed in Part 3B to
+// implement the index transformation of logs.
 impl Raft {
-    /// 输入 logs 的相对索引，转换为计入 snapshot 的绝对索引
+    /// Input a a relative index of logs, converted to an absolute index
+    /// which is based on a snapshot.
     fn absolute_index(&self, index: usize) -> usize {
         index + self.last_included_index
     }
 
-    /// 输入计入 snapshot 的绝对索引，返回一个 logs 的相对索引
-    /// 由于可能得到负的索引，所以考虑返回一个 Option 包装的结果
-    /// 如果返回了 None，表示计算结果是无效的负值
+    /// Input the absolute index and return a relative index of logs.
+    /// Since it is possible to get a negative index,
+    /// consider returning an Option-wrapped result.
+    /// If None is returned, the calculation result is an invalid negative value.
     fn relative_index(&self, index: usize) -> Option<usize> {
         if index >= self.last_included_index {
             Some(index - self.last_included_index)
@@ -171,14 +179,15 @@ impl Raft {
             current_term: Arc::new(AtomicU64::new(1)),
             is_leader: Arc::new(AtomicBool::new(false)),
 
-            // 添加一个 dummy log
+            // add a dummy log
             logs: vec![Log {
                 term: 0,
                 index: 0,
                 command: vec![],
             }],
 
-            // 均初始化为 0，意指 dummy log 已经被 snapshot 包含
+            // Are both initialized to 0,
+            // meaning that the dummy log has been included in the snapshot.
             last_included_index: 0,
             last_included_term: 0,
 
@@ -216,12 +225,13 @@ impl Raft {
         let mut data: Vec<u8> = vec![];
         labcodec::encode(&state, &mut data).unwrap();
         self.persister.save_raft_state(data);
-        // 3B: 更新 persist_size
+        // 3B: Update persist_size
         let size = self.persister.raft_state().len() as u64;
         self.persist_size.store(size, Ordering::SeqCst);
     }
 
-    /// 保存 Raft 状态以及 snapshot
+    /// save Raft's persistent state and snapshot to stable storage,
+    /// where it can later be retrieved after a crash and restart.
     fn persist_state_and_snapshot(&mut self, snapshot: Vec<u8>) {
         let current_term = self.current_term.load(Ordering::SeqCst);
         let state = RaftState {
@@ -234,7 +244,7 @@ impl Raft {
         let mut data: Vec<u8> = vec![];
         labcodec::encode(&state, &mut data).unwrap();
         self.persister.save_state_and_snapshot(data, snapshot);
-        // 3B: 更新 persist_size
+        // 3B: Update persist_size
         let size = self.persister.raft_state().len() as u64;
         self.persist_size.store(size, Ordering::SeqCst);
     }
@@ -297,8 +307,10 @@ impl Raft {
         rx
     }
 
-    // 2B: 修改 channel 中发送的值包含 server 编号、prev_log_index、entries 的长度
-    // 便于 heartbeat 的发送者在接收到回应后更新指定的 next_index 和 match_index
+    // 2B: Modify the value sent in the channel to include the `server` number,
+    // `prev_log_index`, and `length of entries`,
+    // so that the sender of heartbeat can update the specified `next_index` and
+    // `match_index` after receiving the response.
     fn send_heartbeat(&self, server: usize, args: &AppendEntriesArgs) -> Receiver<SyncReply> {
         debug!(
             "[StateFuture {}] send AppendEntriesArgs: [\
@@ -335,8 +347,9 @@ impl Raft {
         rx
     }
 
-    // 3B: send InstallSnapshot RPC 到指定的 server
-    // 返回的接收端将负责接收本 RPC 的回复，server 和 last_included_index 来更新 match_index 和 next_index
+    // 3B: Send InstallSnapshot RPC to the specified server,
+    // the receiving end will be responsible for receiving the `reply` of this RPC,
+    // `server` and `last_included_index` to update `match_index` and `next_index`.
     fn send_install_snapshot(
         &self,
         server: usize,
@@ -375,7 +388,7 @@ impl Raft {
     }
 
     fn start(&mut self, command: Vec<u8>) -> Result<(u64, u64)> {
-        // 日志索引应该是绝对索引，需要转换
+        // The log index should be an absolute index and needs to be converted.
         let index = self.absolute_index(self.logs.len());
         let term = self.current_term.load(Ordering::SeqCst);
         let is_leader = self.is_leader.load(Ordering::SeqCst);
@@ -400,37 +413,48 @@ impl Raft {
 }
 
 impl Raft {
-    /// 判断 RequestVote RPC Caller 的日志集是否比本节点的旧，旧返回 true，反之 false (包括一样新)
-    /// args_last_term 是 Caller 最后一项日志的 term
-    /// args_last_index 是 Caller 最后一项日志的 index
+    /// Determines whether the logs of RequestVote RPC Caller is older than this node,
+    /// If it is old, return true, otherwise false (including the same as new).
+    ///
+    /// `args_last_term` is the term of the last entry in Caller
+    /// `args_last_index` is the index of the last entry in Caller
     fn is_newer(&self, args_last_term: u64, args_last_index: u64) -> bool {
-        // 初始化时添加了一个 dummy log，可以直接 unwrap
-        // 由于 snapshot 后还是会保留最后一个 log，所以这里使用 last() 还是安全的
+        // Added a dummy log during initialization, so can be unwrap directly.
+        // Since the last log is still retained after snapshot,
+        // it is still safe to use last () here.
         let log = self.logs.last().unwrap();
         let (self_last_term, self_last_index) = (log.term, log.index);
 
         if self_last_term == args_last_term {
-            // term 相同，比较长度
+            // term is same, compare length
             self_last_index > args_last_index
         } else {
-            // 比较 term
+            // compare term
             self_last_term > args_last_term
         }
     }
 
-    /// 判断 AppendEntries RPC Caller 的 prev log 是否和当前节点匹配
-    /// 匹配返回 true，反之返回 false
-    /// args_prev_term 是 Caller 希望匹配的日志 term
-    /// args_prev_index 是 Caller 希望匹配的日志 index
+    /// Determine whether the prev log of the AppendEntries RPC Caller
+    /// matches the current node's log.
+    /// If match returns true, otherwise it returns false.
+    ///
+    /// `args_prev_term` is the log term that Caller wants to match
+    /// `args_prev_index` is the log index that Caller wants to match
     fn is_match(&self, args_prev_term: u64, args_prev_index: u64) -> bool {
-        // args_prev_index 是绝对索引，访问 logs 需要相对索引，需要转换
+        // `args_prev_index` is an absolute index,
+        // accessing logs requires a relative index, so requires conversion
         let rel_index = self.relative_index(args_prev_index as usize);
-        // 考虑到脑裂问题的存在，存在于一个网络分区中的旧 leader 在恢复后，
-        // 有可能会向新 leader 所在的分区发送 AppendEntries 请求，会执行 is_match 函数
-        // 这样就有可能匹配新分区中已经 snapshot 的 log，导致访问负索引
+
+        // Considering the existence of the partition problem,
+        // after the old leader in a network partition is recovered,
+        // it may send an AppendEntries request to the partition
+        // where the new leader is located, and it will execute the `is_match` function,
+        // so it may match the snapshot in the new partition.
+        // Leading to negative index access.
         if rel_index.is_none() {
-            // 直接返回 true，其实这里返回 false 也可以
-            // 因为旧 leader 的 term 一定会比新 leader 小，一定不可能 append 成功
+            // It returns true directly, in fact, it can also return false here.
+            // it's because the term of the old leader must be smaller than that of the new leader,
+            // it is impossible to append successfully.
             return true;
         }
         let rel_index = rel_index.unwrap();
@@ -440,7 +464,7 @@ impl Raft {
                 log.term == args_prev_term
             }
             None => {
-                // 说明请求者的 log数量 比本节点的 log 多
+                // Means the requester has more logs than the node's log.
                 false
             }
         }
@@ -463,8 +487,8 @@ impl Raft {
     }
 
     fn be_leader(&mut self) {
-        // 2B: 添加 next_index 和 match_index 的初始化
-        // next_index 显然也是绝对索引，需要转换
+        // 2B: Add initialization of `next_index` and `match_index`.
+        // `next_index` is obviously also an absolute index and needs to be converted.
         let log_len = self.absolute_index(self.logs.len());
         for index in self.next_index.iter_mut() {
             *index = log_len;
@@ -477,30 +501,35 @@ impl Raft {
         self.persist();
     }
 
-    /// 处理 RPC RequestVote 请求, 返回 Reply 和一个bool值表示 args.term 是否大于 term
+    /// Processes RPC RequestVote requests,
+    /// returns a Reply and a bool value indicating whether args.term is greater than term.
     fn handle_request_vote(&mut self, args: RequestVoteArgs) -> (RequestVoteReply, bool) {
         // RequestVoteArgs { term, candidate_id }
         let term = self.current_term.load(Ordering::SeqCst);
 
-        // 2A: 只要发现请求者的 term 比自己大就都同意投票 true is OK
-        // 2B: Raft Paper 5.4.1 选举限制
-        // 不管如何，args.term 只要比自己大就更新自己的 term
-        // 一个 candidate 在网络受阻的情况下多次提升自己的 term
-        // 这样做有利于在恢复后立即更新集群的 term
+        // 2A: Anyone who finds that the requester's term
+        // is larger than himself, agrees to vote.
+        // 2B: Raft Paper 5.4.1 election restrictions.
+        // Regardless, args.term updates its term as long as it is bigger than itself.
+        // A candidate promotes its term multiple times when the network is blocked,
+        // This is useful for updating the cluster's term immediately after recovery.
         if args.term > term {
             self.current_term.store(args.term, Ordering::SeqCst);
         }
 
         let vote_granted =
             if args.term < term || self.is_newer(args.last_log_term, args.last_log_index) {
-                // 只要发现请求者的 term 比自己小就都拒绝投票
-                // 只要发现请求者的日志比自己的旧就拒绝投票
+                // Refuse to vote as long as the requester's term
+                // is found to be smaller than himself.
+                // Refuse to vote as long as the requester's log
+                // is found to be older.
                 false
             } else if args.term > term {
-                // 请求者的日志比自己的新且term大
+                // Requester's log is newer and larger than his own.
                 true
             } else {
-                // 在本任期已经投给过了请求者, 依然同意投票
+                // I have voted for the requester during this term
+                // and still agree to vote.
                 match self.voted_for {
                     Some(peer) => peer == args.candidate_id,
                     None => true,
@@ -508,7 +537,7 @@ impl Raft {
             };
 
         if vote_granted {
-            // 同意投票, 更新 voted_for
+            // Agree to vote, update `voted_for`
             self.voted_for = Some(args.candidate_id);
         }
         self.persist();
@@ -516,10 +545,11 @@ impl Raft {
         (RequestVoteReply { term, vote_granted }, args.term > term)
     }
 
-    /// 处理 RPC AppendEntries 请求, 返回 Reply 和一个bool值表示 args.term 是否大于等于 term
+    /// Processes RPC AppendEntries requests, returns a Reply
+    /// and a bool value indicating whether args.term is greater than or equal to term.
     fn handle_append_entries(&mut self, mut args: AppendEntriesArgs) -> (AppendEntriesReply, bool) {
         // AppendEntriesArgs { term, leader_id }
-        // 此处 prev_index 是由调用者传来的绝对索引
+        // Here `prev_index` is the absolute index passed by the caller
         let prev_index = args.prev_log_index;
         let prev_term = args.prev_log_term;
         let term = self.current_term.load(Ordering::SeqCst);
@@ -527,26 +557,30 @@ impl Raft {
         if args.term > term {
             self.current_term.store(args.term, Ordering::SeqCst);
         }
-        // 这里传入绝对索引没有问题，接口约定一致
+        // There is no problem passing in the absolute index here,
+        // and the interface conventions are consistent.
         let log_match = self.is_match(prev_term, prev_index);
         let success = args.term >= term && log_match;
         if success {
             if !args.entries.is_empty() {
-                // 匹配 且 entries 不为空
-                // 这里没有再搜索冲突位置，直接截取 prev_index + 1 长度的 log
-                // 访问 logs 需要使用相对索引
+                // Matches and `entries` are not empty
+                // There is no more search for conflict locations here,
+                // and the log of length `prev_index + 1` is directly truncated.
+                // Accessing logs requires relative indexing.
                 let rel_index = self.relative_index(prev_index as usize);
-                // success 判断应该保证相对索引为正
-                assert!(rel_index.is_some());
-                self.logs.truncate(rel_index.unwrap() + 1);
-                self.logs.append(&mut args.entries);
+                // Able to ensure that the relative index is positive.
+                if rel_index.is_some() {
+                    self.logs.truncate(rel_index.unwrap() + 1);
+                    self.logs.append(&mut args.entries);
+                }
             }
-            // 匹配, 并在可能加入了新的条目后, 判断 leader 发来的 commit_index
+            // Match, and after adding a new entry,
+            // judge the `commit_index` sent by the leader.
             if args.leader_commit > self.commit_index as u64 {
-                // 将 commit_index 更新为 args.leader_commit 和新日志条目索引值中较小的一个
+                // Update `commit_index` to the smaller of `args.leader_commit`
+                // and the index value of the new log entry.
                 self.commit_index = min(
                     args.leader_commit as usize,
-                    // 这里的确应该使用绝对索引
                     prev_index as usize + args.entries.len(),
                 );
             }
@@ -564,13 +598,14 @@ impl Raft {
                 args.term >= term,
             )
         } else {
-            // 同上理由，需要转换为相对索引
+            // For the same reason, you need to convert to a relative index.
             let rel_index = self.relative_index(prev_index as usize);
             assert!(rel_index.is_some());
             let prev_index = rel_index.unwrap();
             let (conflict_index, conflict_term) = match self.logs.get(prev_index) {
                 Some(log) => {
-                    // 越过所有那个任期冲突的所有日志条目,找到该任期最早的日志索引
+                    // Go over all log entries that conflict with that term
+                    // and find the earliest log index for that term.
                     let mut index = prev_index;
                     for i in (0..=prev_index).rev() {
                         if self.logs[i as usize].term != log.term {
@@ -578,11 +613,11 @@ impl Raft {
                             break;
                         }
                     }
-                    // 转换为绝对索引
+                    // Convert to absolute index.
                     (self.absolute_index(index), log.term)
                 }
                 None => {
-                    // 说明请求者的 log数量 比本节点的 log 多
+                    // Means the requester has more logs than the node's log.
                     (self.absolute_index(self.logs.len()), 0)
                 }
             };
@@ -598,7 +633,7 @@ impl Raft {
         }
     }
 
-    /// 处理 RPC InstallSnapshot 请求, 返回 Reply
+    /// Process RPC InstallSnapshot request, return Reply.
     fn handle_install_snapshot(
         &mut self,
         args: InstallSnapshotArgs,
@@ -610,33 +645,33 @@ impl Raft {
         if args.term > term {
             self.current_term.store(args.term, Ordering::SeqCst);
         }
-        // success 表示是否能成功的安装本快照
+        // success indicates whether the snapshot can be successfully installed.
         let success = args.term >= term && last_index > (self.last_included_index as u64);
         if success {
             if last_index < (self.absolute_index(self.logs.len() - 1) as u64) {
                 self.logs
                     .drain(..self.relative_index(last_index as usize).unwrap());
             } else {
-                // 说明现有 log 已经被 snapshot 全部覆盖
+                // It means that the existing log has been completely covered by snapshot.
                 self.logs = vec![Log {
                     term: last_term,
                     index: last_index,
                     command: vec![],
                 }];
             }
-            // 更新并持久化 snapshot
+            // Update and persist snapshot.
             self.last_included_index = last_index as usize;
             self.last_included_term = last_term;
             self.persist_state_and_snapshot(args.data.clone());
-            // 不同于 append entries 的 commit_index 和 last_applied 的更新
-            // install snapshot 情况下非常简单
+            // Update here is different from append_commit_index and last_applied.
+            // install snapshot is very simple.
             self.commit_index = max(self.commit_index, last_index as usize);
             self.last_applied = max(self.last_applied, last_index as usize);
 
             let msg = ApplyMsg {
                 command_valid: false,
                 command: args.data,
-                // 以下两项无关紧要
+                // The following two don't matter
                 command_index: 0,
                 command_term: 0,
             };
@@ -646,10 +681,10 @@ impl Raft {
         (InstallSnapshotReply { term }, args.term >= term)
     }
 
-    /// 向所有 peers 发送投票请求
+    /// Send voting requests to all peers.
     fn send_request_vote_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
-        // 使用 last() 是安全的
+        // Using last () is safe
         let log = self.logs.last().unwrap();
         let args = RequestVoteArgs {
             term,
@@ -659,38 +694,39 @@ impl Raft {
         };
 
         let me = self.me;
-        // RequestVote Reply 的接收端
+        // RequestVote Reply receivers.
         let result_rxs: Vec<Receiver<Result<RequestVoteReply>>> = self
             .peers
             .iter()
             .enumerate()
             .filter(|(id, _)| {
-                // 筛除自己
+                // Sift yourself
                 *id != me
             })
             .map(|(id, _)| self.send_request_vote(id, &args))
             .collect();
 
-        // 初始化为1, 默认投自己一票
+        // Initialize to 1, vote for yourself by default
         let mut vote_cnt = 1 as usize;
         let group_num = self.peers.len();
         let tx = self.msg_tx.clone();
 
-        // 这里使用 take_while 在达到半数后就会终止 stream 的执行
-        // 进而导致有些 rx 端提前被销毁
-        // 所以在 send_request_vote 函数中会出现 unwrap on a `Err` 的异常
-        // 需要在 send_request_vote 中忽略掉 error
+        // Here `take_while` will terminate the execution of the stream after reaching half,
+        // As a result, some rx ends in result_rxs are destroyed in advance,
+        // So an unwrap on a `Err` exception will appear in the send_request_vote function.
+        // Need to ignore error in send_request_vote.
         let stream = futures::stream::futures_unordered(result_rxs)
             .take_while(move |reply| {
-                // 由于虚拟网络的干扰会出现 Err, 忽略掉 Err 的 Reply
+                // Err appears due to the interference of the virtual network,
+                // ignore Err's Reply.
                 if let Ok(reply) = reply {
                     info!("[send_request_vote_all {}] get vote reply: {:?}", me, reply);
                     if reply.vote_granted {
-                        // 同意投票
+                        // Agree to vote
                         vote_cnt += 1;
                         if vote_cnt * 2 > group_num {
-                            // 超过半数
-                            // 向状态机发送 SuccessElection 消息
+                            // More than half.
+                            // Send a `SuccessElection` message to the state machine
                             tx.unbounded_send(ActionEv::SuccessElection(term))
                                 .map_err(|e| {
                                     debug!(
@@ -699,16 +735,16 @@ impl Raft {
                                     );
                                 })
                                 .unwrap_or_else(|_| ());
-                            // stream 完成
+                            // stream finish
                             ok(false)
                         } else {
                             ok(true)
                         }
                     } else {
-                        // 不同意投票，查看回应的 term
-                        // 不同意原因1：reply.term > term
+                        // Disagree to vote, see response term:
+                        // Disagree reason 1: reply.term > term
                         if reply.term > term {
-                            // 向状态机发送 Fail 消息
+                            // Send a Fail message to the state machine.
                             tx.unbounded_send(ActionEv::Fail(reply.term))
                                 .map_err(|e| {
                                     debug!(
@@ -717,10 +753,10 @@ impl Raft {
                                     );
                                 })
                                 .unwrap_or_else(|_| ());
-                            // stream 完成
+                            // stream finish
                             ok(false)
                         } else {
-                            // 不同意原因2：本节点的日志不够新
+                            // Disagree Reason 2: The log of this node is not new enough.
                             ok(true)
                         }
                     }
@@ -729,17 +765,18 @@ impl Raft {
                 }
             })
             .for_each(|_| ok(()))
-            // Send 端 Canceled Err 应该不会出现
+            // Canceled Err on the send side should not appear.
             .map_err(|_| ());
 
         tokio::spawn(stream);
     }
 
-    /// 帮助 send_heartbeat_all 计算发送给 server 的 AppendEntries RPC 参数
+    /// Help send_heartbeat_all calculate the AppendEntries RPC parameters sent to the server.
     fn set_append_entries_arg(&self, term: u64, server: usize) -> AppendEntriesArgs {
         let prev_log_index = self.next_index[server] - 1;
-        // next_index 中保存的绝对索引，需要换算为相对索引
-        // 这里要求在调用此函数时事先检查 prev_log_index 是否不落在 snapshot 范围内
+        // The absolute index stored in next_index needs to be converted to a relative index.
+        // Here it is required to check whether `prev_log_index`
+        // does not fall within the scope of snapshot when calling this function.
         let rel_index = self.relative_index(prev_log_index);
         assert!(rel_index.is_some());
         let rel_index = rel_index.unwrap();
@@ -761,7 +798,7 @@ impl Raft {
         }
     }
 
-    /// 帮助 send_heartbeat_all 计算发送给 server 的 InstallSnapshot RPC 参数
+    /// Help send_heartbeat_all calculate the InstallSnapshot RPC parameters sent to the server.
     fn set_install_snapshot_arg(&self, term: u64) -> InstallSnapshotArgs {
         InstallSnapshotArgs {
             term,
@@ -772,27 +809,27 @@ impl Raft {
         }
     }
 
-    /// 向所有 peers 发送 AppendEntries RPC
+    /// Send AppendEntries RPC to all peers.
     fn send_heartbeat_all(&self) {
         let term = self.current_term.load(Ordering::SeqCst);
 
         let me = self.me;
-        // AppendEntries Reply 的接收端
+        // AppendEntries Reply receivers
         let result_rxs: Vec<Receiver<SyncReply>> = self
             .peers
             .iter()
             .enumerate()
             .filter(|(id, _)| {
-                // 筛除自己
+                // Sift yourself
                 *id != me
             })
             .map(|(id, _)| {
                 if self.next_index[id] <= self.last_included_index {
-                    // 需要的 next_index 已经包含了在了本节点的 snapshot 中
-                    // 发送 snapshot
+                    // The required next_index is already included in the snapshot of this node.
+                    // send snapshot
                     self.send_install_snapshot(id, &self.set_install_snapshot_arg(term))
                 } else {
-                    // 照常发送 append entries
+                    // Send append entries as usual.
                     self.send_heartbeat(id, &self.set_append_entries_arg(term, id))
                 }
             })
@@ -810,8 +847,10 @@ impl Raft {
                             );
 
                             if reply.success {
-                                // 说明日志匹配且本机term大于等于对方term
-                                // 因为 move 的限制发送更新 match_index 和 next_index 的消息到 StateFuture
+                                // The log matches and the local term is greater than
+                                // or equal to the counterpart term.
+                                // Because of the limitation of move, send the message
+                                // that updates `match_index` and `next_index` to StateFuture.
                                 debug!(
                                     "[send_heartbeat_all {}] StateFuture {}'s log match with me",
                                     me, id
@@ -829,7 +868,7 @@ impl Raft {
                                     })
                                     .unwrap_or_else(|_| ());
                             } else if reply.term > term {
-                                // 立即回到 follower 状态
+                                // Return to follower immediately.
                                 tx.unbounded_send(ActionEv::Fail(reply.term))
                                     .map_err(|e| {
                                         debug!(
@@ -839,8 +878,8 @@ impl Raft {
                                     })
                                     .unwrap_or_else(|_| ());
                             } else {
-                                // 说明是未匹配
-                                // 发送更新 next_index 的消息到 StateFuture
+                                // Unmatched
+                                // Send a message updating `next_index` to StateFuture.
                                 debug!(
                                     "[send_heartbeat_all {}] StateFuture {}'s log mis-match with me",
                                     me, id
@@ -868,7 +907,7 @@ impl Raft {
                                 me, id, reply
                             );
                             if reply.term > term {
-                                // 立即回到 follower 状态
+                                // Return to follower immediately.
                                 tx.unbounded_send(ActionEv::Fail(reply.term))
                                     .map_err(|e| {
                                         debug!(
@@ -878,7 +917,7 @@ impl Raft {
                                     })
                                     .unwrap_or_else(|_| ());
                             } else {
-                                // 更新 match_index 和 next_index
+                                // Update `match_index` and `next_index`
                                 tx.unbounded_send(ActionEv::UpdateIndex(
                                     term,
                                     id,
@@ -902,16 +941,17 @@ impl Raft {
         tokio::spawn(stream);
     }
 
-    /// 在每次 Leader 的 match_index 发生改变的时候都试图更新一下 commit_index
+    /// Try to update the commit_index every time the leader's match_index changes.
     fn update_commit_index(&mut self) {
-        // 1. 大多数的matchIndex[i] ≥ N成立
+        // 1. Most matchIndex [i] ≥ N holds
         let mut tmp_match_index = self.match_index.clone();
-        // 由于 match_index 中存储的也是绝对索引，所以需要转换
+        // Since match_index is also stored as an absolute index, it needs to be converted.
         tmp_match_index[self.me] = self.absolute_index(self.logs.len()) - 1;
         tmp_match_index.sort_unstable();
 
         let group_num = self.peers.len();
-        // 那么 N 可能的范围就落在tmp_match_index 的 0..(group_num - 1) / 2 索引位置
+        // Then the possible range of N falls
+        // at 0 .. (group_num-1) / 2 index position of `tmp_match_index`.
         tmp_match_index.truncate((group_num + 1) / 2);
 
         let current_term = self.current_term.load(Ordering::SeqCst);
@@ -920,7 +960,7 @@ impl Raft {
             .filter(|n| {
                 // 2. N > commitIndex
                 // 3. log[N].term == currentTerm
-                // 访问 logs 使用相对索引，转换
+                // Access logs using relative index, conversion.
                 let rel_index = self.relative_index(*n);
                 match rel_index {
                     Some(rel_index) => {
@@ -937,16 +977,16 @@ impl Raft {
                 self.me, self.commit_index, n
             );
             self.commit_index = n;
-            // 更新了 commit_index 尝试 apply log
+            // Updated commit_index to try apply log.
             self.apply_msg();
         }
     }
 
-    /// 提交 log 至应用层，并改变 last_applied
+    /// Submit log to application layer and change `last_applied`.
     fn apply_msg(&mut self) {
         while self.last_applied < self.commit_index {
             let apply_idx = self.last_applied + 1;
-            // 转换为相对索引
+            // Convert to relative index.
             let rel_index = self.relative_index(apply_idx);
             if rel_index.is_none() {
                 self.last_applied += 1;
@@ -965,49 +1005,51 @@ impl Raft {
     }
 }
 
-/// 定义状态机事件
+/// Define state machine events.
 enum TimeoutEv {
-    /// 选举超时
+    /// Election Timeout
     Election,
-    /// 心跳超时
+    /// Heartbeat Timeout
     Heartbeat,
 }
 
 enum ActionEv {
-    /// 节点接收到来自其他节点的 RequestVote RPC
-    /// 使用 oneshot 一次性管道发送结果到异步等待的接收端
+    /// Node receives RequestVote RPC from other nodes
+    /// Use oneshot to send results to the asynchronously waiting receiver
     RequestVote(RequestVoteArgs, Sender<RequestVoteReply>),
-    /// 节点接收到来自其他节点的 AppendEntries RPC
+    /// Node receives AppendEntries RPC from other nodes
     AppendEntries(AppendEntriesArgs, Sender<AppendEntriesReply>),
-    /// 节点接收到来自其他节点的 InstallSnapshot RPC
+    /// Node receives InstallSnapshot RPC from other nodes
     InstallSnapshot(InstallSnapshotArgs, Sender<InstallSnapshotReply>),
-    /// 在一次选举当中获胜 包含获胜任期
+    /// Win in an election, including a winning term.
     SuccessElection(u64),
-    /// 在一次选举当中失败 包含导致失败的发送者任期
+    /// Failure in an election
+    /// including the term of the sender that caused the failure.
     Fail(u64),
-    /// 广播 heartbeat 之后，更新 match_index 和 next_index
-    /// Ok(usize) 表示匹配成功后新的 next_index, 相应地更新 match_index
-    /// Err(usize) 表示匹配失败后新的 next_index, 无需更新 match_index
-    /// u64 存储 term, 作用同上
-    /// usize 存储 id
+    /// After broadcasting the heartbeat, update `match_index` and `next_index`
+    /// Ok (usize) means the new next_index after a successful match,
+    /// and update match_index accordingly
+    /// Err (usize) means the new next_index after the match fails,
+    /// no need to update match_index.
+    /// u64 stores term, same as above
+    /// usize stores id
     UpdateIndex(u64, usize, std::result::Result<usize, usize>),
-    /// start 命令
     StartCmd(Vec<u8>, Sender<Result<(u64, u64)>>),
-    /// 本机 snapshot
     LocalSnapshot(usize, Vec<u8>),
-    /// 关闭状态机
+    /// shut down state machine
     Kill,
 }
 
-/// `StateFuture` 实现 `Stream` Trait
-/// 在执行者的推动下，将完成异步状态机的功能
-/// `StateFuture` 将 timeout 和 其他节点的 RPC 等事件都视为 `Future`
-/// `StateFuture` 异步地等待事件的到达，根据事件相应地改变 Raft 状态
+/// `StateFuture` implement `Stream` Trait
+/// Driven by the executor, the function of the asynchronous state machine will be completed.
+/// `StateFuture` treats events such as timeout and other nodes' RPCs as `Future`
+/// `StateFuture` asynchronously waits for the event to arrive
+/// and changes the Raft state accordingly.
 ///
-/// 所以 `StateFuture` 包含了对 `Raft` 的所有权
-/// RPC 事件异步接收者包含在 `Raft` 结构中
-/// timeout 事件则由内部 `Delay` 实现
-/// timeout_ev 表示超时事件
+/// So `StateFuture` includes ownership of` Raft`
+/// RPC event asynchronous receivers are included in the Raft structure.
+/// The `timeout` event is implemented by the internal `Delay`
+/// `timeout_ev` means timeout event
 struct StateFuture {
     raft: Raft,
     timeout: Delay,
@@ -1043,25 +1085,25 @@ impl Stream for StateFuture {
             Ok(Async::Ready(Some(ev))) => {
                 match ev {
                     ActionEv::RequestVote(args, tx) => {
-                        // 调用 Raft::handle_request_vote, 返回 reply
-                        // 将 reply 通过 tx 发送
+                        // Call Raft::handle_request_vote, return reply
+                        // Send reply via tx
                         info!("[StateFuture {}] get RequestVote event", self.raft.me);
                         let (reply, args_term_gtr) = self.raft.handle_request_vote(args);
                         let vote_granted = reply.vote_granted;
                         tx.send(reply).unwrap_or_else(|_| {
                             debug!("[StateFuture {}] send RequestVoteReply error", self.raft.me);
                         });
-                        // 2B: 现在 vote_granted 就不能完全表示 args.term > term 的情况了
-                        // 故修改 handle_request_vote 的接口
+                        // 2B: vote_granted can no longer fully represent args.term> term
+                        // So modify the handle_request_vote interface.
                         if args_term_gtr || vote_granted {
                             self.raft.be_follower();
-                            // 重置超时时间, 设置下次超时执行选举
+                            // Reset timeout, set the next timeout election
                             self.timeout.reset(StateFuture::rand_election_timeout());
                             self.timeout_ev = TimeoutEv::Election;
                         }
                     }
                     ActionEv::AppendEntries(args, tx) => {
-                        // 调用 Raft::handle_append_entries, 返回 reply
+                        // Call Raft::handle_append_entries, return reply
                         info!("[StateFuture {}] get AppendEntries event", self.raft.me);
                         let (reply, args_term_ge) = self.raft.handle_append_entries(args);
                         tx.send(reply).unwrap_or_else(|_| {
@@ -1075,17 +1117,17 @@ impl Stream for StateFuture {
                                 "[StateFuture {}] After Handle AppendEntries => follower",
                                 self.raft.me
                             );
-                            // 投票标记为真, 改变 raft 状态为 follower
+                            // Vote marked as true, change raft status to follower.
                             self.raft.be_follower();
-                            // 重置超时时间, 设置下次超时执行选举
+                            // Reset timeout, set the next timeout election.
                             self.timeout.reset(StateFuture::rand_election_timeout());
                             self.timeout_ev = TimeoutEv::Election;
-                            // 更新 last_applied 并向应用层提交日志
+                            // Update last_applied and submit logs to the application layer.
                             self.raft.apply_msg();
                         }
                     }
                     ActionEv::InstallSnapshot(args, tx) => {
-                        // 调用 Raft::handle_install_snapshot, 返回 reply
+                        // Call Raft::handle_install_snapshot, return reply.
                         info!("[StateFuture {}] get InstallSnapshot event", self.raft.me);
                         let (reply, args_term_ge) = self.raft.handle_install_snapshot(args);
                         tx.send(reply).unwrap_or_else(|_| {
@@ -1106,9 +1148,6 @@ impl Stream for StateFuture {
                     }
                     ActionEv::SuccessElection(term) => {
                         info!("[StateFuture {}] get SuccessElection event", self.raft.me);
-                        // 如果接收到 SuccessElection 的时候
-                        // 节点已经转变状态为 follower，那么目前的 term 一定是本节点之前选举的之后任期
-                        // 如果选举超时再一次开始了选举，那么目前的 term 也一定是本节点之前选举的之后任期
                         if self.raft.current_term.load(Ordering::SeqCst) == term {
                             info!(
                                 "[StateFuture {}] After Get SuccessElection => leader",
@@ -1168,7 +1207,7 @@ impl Stream for StateFuture {
                         }
                     }
                     ActionEv::Kill => {
-                        // Stream 完成
+                        // Stream finish
                         info!("[StateFuture {}] killed", self.raft.me);
                         return Ok(Async::Ready(None));
                     }
@@ -1176,7 +1215,7 @@ impl Stream for StateFuture {
                 return Ok(Async::Ready(Some(())));
             }
             Ok(Async::Ready(None)) => {
-                // action发送端关闭，表示 Stream 完成
+                // The action sender is closed, indicating that the Stream is complete.
                 return Ok(Async::Ready(None));
             }
             Ok(Async::NotReady) => {}
@@ -1192,9 +1231,9 @@ impl Stream for StateFuture {
                             self.raft.me,
                             self.raft.current_term.load(Ordering::SeqCst)
                         );
-                        // 改变 raft 状态为 candidate
+                        // Change raft status to candidate.
                         self.raft.be_candidate();
-                        // 重置超时时间, 设置下次超时执行选举
+                        // Reset timeout, set the next timeout election.
                         self.timeout.reset(StateFuture::rand_election_timeout());
                         self.timeout_ev = TimeoutEv::Election;
                     }
@@ -1204,7 +1243,7 @@ impl Stream for StateFuture {
                             self.raft.me,
                             self.raft.current_term.load(Ordering::SeqCst)
                         );
-                        // 发送心跳包
+                        // send heartbeat
                         self.raft.send_heartbeat_all();
                         self.timeout.reset(StateFuture::heartbeat_timeout());
                         self.timeout_ev = TimeoutEv::Heartbeat;
@@ -1239,9 +1278,13 @@ impl Stream for StateFuture {
 // ```rust
 // struct Node { sender: Sender<Msg> }
 // ```
-/// state_machine 将 `StateFuture` 异步状态机放到一个独立线程运行
-/// current_term 和 is_leader 共享 Raft 中对应成员的所有权 (为了 term 和 is_leader 方法)
-/// msg_tx 从 Raft 结构中对应成员 clone 得到，用于捕获 RPC 调用，发送消息到 `StateFuture`
+/// state_machine puts the `StateFuture` asynchronous state machine into a separate thread.
+///
+/// current_term and is_leader share ownership of corresponding
+/// members in Raft (for term and is_leader methods).
+///
+/// msg_tx is obtained from the corresponding member clone in the Raft structure,
+/// which is used to capture RPC calls and send messages to `StateFuture`.
 #[derive(Clone)]
 pub struct Node {
     // Your code here.
@@ -1338,11 +1381,14 @@ impl Node {
         }
     }
 
-    /// 获得 persister 中的数据量大小
+    /// Get the amount of data in the persister
     ///
-    /// 需要注意的是 persister 实际数据量改变和 persist_size 改变不保证原子性
-    /// 所以访问到的可能是数据改变之前的数据量，所以在判断是否需要 snapshot 的时候
-    /// 需要设定一个比最大阈值还要低的触发值，如 80%-90%
+    /// It should be noted that the actual amount of data in the persister
+    /// and the change in persist_size do not guarantee atomicity.
+    ///
+    /// So what is read may be the amount of data before the data is changed,
+    /// so when determining whether a snapshot is needed, you need to set a
+    /// trigger value lower than the maximum threshold, such as 80% -90%.
     pub fn persist_size(&self) -> u64 {
         self.persist_size.load(Ordering::SeqCst)
     }
@@ -1361,17 +1407,19 @@ impl Node {
             self.msg_tx
                 .unbounded_send(ActionEv::Kill)
                 .unwrap_or_else(|_| ());
-            // 这里如果使用了 join 等待线程结束，在测试结束后会等待较长一段时间
-            // 因为在 send_heartbeat_all 与 send_request_vote_all 有新的线程尚未结束
-            // 尚未实现优雅停机
+            // If you use join to wait for the thread to end,
+            // you will wait for a long time after the test is finished.
+            // Because there are new threads in send_heartbeat_all and
+            // send_request_vote_all that have not ended.
+            //
+            // Currently, Elegant downtime has not been achieved.
             //            handle.join().unwrap();
         }
     }
 
-    /// 来自顶层的 KvServer 调用，本地进行 snapshot
+    /// Call from KvServer, snapshot locally.
     ///
-    /// applied_index 为本次 snapshot 的最后一个日志索引
-    /// snapshot 就是本次的快照
+    /// applied_index is the last log index of this snapshot
     pub fn local_snapshot(&self, applied_index: usize, snapshot: Vec<u8>) {
         if !self.msg_tx.is_closed() {
             self.msg_tx

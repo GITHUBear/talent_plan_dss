@@ -542,6 +542,8 @@ fn generic_test_linearizability(
     cfg.check_timeout();
     cfg.end();
 
+    drop(cfg);
+
     if !check_operations_timeout(
         KvModel {},
         Arc::try_unwrap(operations).unwrap().into_inner().unwrap(),
