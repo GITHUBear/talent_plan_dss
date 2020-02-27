@@ -561,18 +561,15 @@ impl Raft {
         // and the interface conventions are consistent.
         let log_match = self.is_match(prev_term, prev_index);
         let success = args.term >= term && log_match;
-        if success {
+        let rel_index = self.relative_index(prev_index as usize);
+        if success && rel_index.is_some() {
             if !args.entries.is_empty() {
                 // Matches and `entries` are not empty
                 // There is no more search for conflict locations here,
                 // and the log of length `prev_index + 1` is directly truncated.
                 // Accessing logs requires relative indexing.
-                let rel_index = self.relative_index(prev_index as usize);
-                // Able to ensure that the relative index is positive.
-                if rel_index.is_some() {
-                    self.logs.truncate(rel_index.unwrap() + 1);
-                    self.logs.append(&mut args.entries);
-                }
+                self.logs.truncate(rel_index.unwrap() + 1);
+                self.logs.append(&mut args.entries);
             }
             // Match, and after adding a new entry,
             // judge the `commit_index` sent by the leader.

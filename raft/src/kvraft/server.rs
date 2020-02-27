@@ -97,7 +97,7 @@ impl KvServer {
     /// applied_index 保存了本次 snapshot 的最后一个日志索引
     fn need_snapshot(&self, applied_index: u64) {
         if let Some(limit) = self.maxraftstate {
-            if self.rf.persist_size() < (limit * 8 / 10) as u64 {
+            if self.rf.persist_size() < (limit * 6 / 10) as u64 {
                 // 小于最大阈值的 80%，不进行 snapshot
                 return;
             }
