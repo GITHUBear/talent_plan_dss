@@ -1,5 +1,7 @@
 # Distributed Systems in Rust
 
+[实验报告与设计文档]
+
 A training course about the distributed systems in [Rust].
 
 Subjects covered include:
@@ -49,3 +51,4 @@ understand please [file issues].
 [Rust]: https://www.rust-lang.org/
 [Raft consensus algorithm]: raft/README.md
 [Percolator transaction model]: percolator/README.md
+[实验报告与设计文档]: raft/report.md
