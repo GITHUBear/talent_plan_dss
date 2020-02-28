@@ -562,26 +562,28 @@ impl Raft {
         let log_match = self.is_match(prev_term, prev_index);
         let success = args.term >= term && log_match;
         let rel_index = self.relative_index(prev_index as usize);
-        if success && rel_index.is_some() {
-            if !args.entries.is_empty() {
-                // Matches and `entries` are not empty
-                // There is no more search for conflict locations here,
-                // and the log of length `prev_index + 1` is directly truncated.
-                // Accessing logs requires relative indexing.
-                self.logs.truncate(rel_index.unwrap() + 1);
-                self.logs.append(&mut args.entries);
+        if success {
+            if let Some(rel_index) = rel_index {
+                if !args.entries.is_empty() {
+                    // Matches and `entries` are not empty
+                    // There is no more search for conflict locations here,
+                    // and the log of length `prev_index + 1` is directly truncated.
+                    // Accessing logs requires relative indexing.
+                    self.logs.truncate(rel_index + 1);
+                    self.logs.append(&mut args.entries);
+                }
+                // Match, and after adding a new entry,
+                // judge the `commit_index` sent by the leader.
+                if args.leader_commit > self.commit_index as u64 {
+                    // Update `commit_index` to the smaller of `args.leader_commit`
+                    // and the index value of the new log entry.
+                    self.commit_index = min(
+                        args.leader_commit as usize,
+                        prev_index as usize + args.entries.len(),
+                    );
+                }
+                self.persist();
             }
-            // Match, and after adding a new entry,
-            // judge the `commit_index` sent by the leader.
-            if args.leader_commit > self.commit_index as u64 {
-                // Update `commit_index` to the smaller of `args.leader_commit`
-                // and the index value of the new log entry.
-                self.commit_index = min(
-                    args.leader_commit as usize,
-                    prev_index as usize + args.entries.len(),
-                );
-            }
-            self.persist();
         }
 
         if log_match {
