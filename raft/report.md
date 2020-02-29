@@ -1,5 +1,27 @@
 # Raft 实验报告
 
+## 当前版本存在的一些问题
+
+1. 目前未实现优雅地停机
+2. 不优雅的停机导致通道发送与接收会出现彼端已经销毁的错误，对于这些错误的处理
+也不够优雅，基本就是 `unwrap_or_else` 对错误进行忽略
+3. 部分文件的注释还是中文(将 raft/mod.rs 注释改成英文后，其他就没有修改)
+4. 由于停机不优雅，导致 3a 部分 `linearizability` 的一个测试有较低概率在
+如下代码处出现 unwrap err(kvraft/tests.rs:549)：
+
+    ```rust
+    Arc::try_unwrap(operations).unwrap().into_inner().unwrap()
+    ```
+
+   猜测可能是 `KvServer` 尚未被 kill 使得锁未释放导致的，所以我在之前调用
+drop，销毁 cfg，使之调用 KvServer 的 kill 方法来结束状态机，之后测试基本
+不再出现这种情况。
+
+5. 框架代码自身还有问题，在 labrpc 的测试中，`test_killed` 不能稳定通过，错误
+如下图所示，个人觉得这不是什么大问题：
+
+![labrpc_error](./error.jpg)
+
 ## Part 2a
 
 ### 协议
@@ -465,3 +487,109 @@ part 3 部分对于具体实现并没有给出明确参考，自由度较高，�
 
 类似的，服务器端在接收到一个 RPC 调用后，将发送对应的 RPC 处理消息到服务器中运行的状态机(包含一个处理结果的发送端，在状态机处理
 完毕后发送结果)，而该 RPC 调用立即返回一个接收端的 Future。
+
+#### KvServer 结构设计
+
+`KvServer` 定义如下：
+
+```rust
+pub struct KvServer {
+    pub rf: raft::Node,
+    me: usize,
+    // snapshot if log grows this big
+    maxraftstate: Option<usize>,
+    // Your definitions here.
+    // 简易数据库
+    db: HashMap<String, String>,
+    // 保存一个 client 名到该客户端提交的操作的最大序列号的映射
+    // 避免一个序列号的操作被 client 反复提交
+    client_seq_map: HashMap<String, u64>,
+    // 保存一个 操作日志索引 到 (相应操作请求的结果发送端,term,client name,client seq,操作方式) 的映射
+    // 用于防止 get 和 put_append 方法的阻塞
+    log_index_channel_map: HashMap<u64, (Sender<Reply>, u64, String, u64, u64)>,
+    // 传输 客户端调用事件 的发送端和接收端
+    msg_rx: UnboundedReceiver<ActionEv>,
+    msg_tx: UnboundedSender<ActionEv>,
+    // 接收来自下层的 Raft 发送来的 已经成功提交的日志
+    apply_ch: UnboundedReceiver<ApplyMsg>,
+}
+```
+
+其中的 `log_index_channel_map` 是在之前的分析中尚未出现的，因为采用了 RPC 调用返回接收端的 Future，就需要
+在 `apply_ch` 接收到一个来自 Raft 的操作日志的时候，分辨这个操作日志应该是哪次 RPC 调用的请求，所以就需要将
+操作日志的索引与发送端建立一个映射进行保存，当然仅仅保存发送端并不足够，因为要求能够分辨出在服务器端处理相应日志的
+过程中 leadership 是否发生了转移，所以需要日志 term、客户端名以及客户端序列号，操作方式等来唯一地确定这个日志
+是否发生了覆盖。
+
+在实际实现中，对于 leadership 的丢失检查其实不是绝对严格的，允许一个 leader 在失去领导后，再一次获得领导权，
+然后提交了之前一个任期中尚未提交的日志，以减少客户端的等待，当然也极有可能在这样一个过程中，client 已经接收到了
+超时操作的应答。
+
+#### 服务器端处理超时
+
+可以想到如果将超时处理放到 `KvServer` 的状态机中进行处理，会带来很多实现上的困难，所以在实际实现的时候，采用了在
+RPC 调用方法中返回了一个带超时 Delay 的 Future。
+
+具体实现代码如下：
+
+```rust
+fn get(&self, arg: GetRequest) -> RpcFuture<GetReply> {
+    // Your code here.
+    let (tx, rx) = channel();
+
+    if !self.msg_tx.is_closed() {
+        self.msg_tx
+            .clone()
+            .unbounded_send(ActionEv::GetRpc(arg, tx))
+            .map_err(|_| ())
+            .unwrap();
+    }
+
+    Box::new(
+        Delay::new(Duration::from_millis(500))
+            .map(|_| GetReply {
+                wrong_leader: true,
+                err: "timeout".to_owned(),
+                value: "".to_owned(),
+            })
+            .map_err(|_| labrpc::Error::Other("timeout error".to_owned()))
+            .select(
+                rx.map(move |reply| match reply {
+                    Reply::Get(get_reply) => get_reply,
+                    Reply::PutAppend(_) => unreachable!(),
+                })
+                .map_err(|_| labrpc::Error::Other("GetReply receive error".to_owned())),
+            )
+            .map(|(reply, _)| reply)
+            .map_err(|(e, _)| e),
+    )
+}
+```
+
+使用 select 方法处理异步等待两个事件中的一个完成的情况，通过 map 将 Delay 超时事件先发生情况下需要发送的
+Reply 发送给 client，这样 client 就会选择其他服务器提交操作，而不是在一段未知时间内等待网络分区恢复。
+
+## Part 3b
+
+由于采用状态机的设计方式，代码扩展变得比较容易，对于 Part 3B 仅仅是做一下过程梳理：
+
+`KvServer` 端：
+
+- 在 `KvServer` 处增加根据当前 db 状态创建 snapshot 的方法，以及从 persister 中恢复 db 状态的方法
+- 在每次 apply_msg 中有日志达成一致并提交成功应用之后，就检查 persister 中的日志数据量大小，如果达到阈值
+就，创建 snapshot，将最后一条应用的日志的索引与 snapshot bytes 交给 `Raft` 进行处理，下面称之为 `local_snapshot` 事件
+- 如果 apply_msg 中发送来的是 snapshot，就将 db 置为指定 snapshot 的状态
+
+`Raft` 端：
+
+- 支持以 snapshot 的 last_included_index 为基准的 log 访问
+- 增加对于 `local_snapshot` 事件的处理，同样根据 Part 2a 中的并发安全性，这里也是将这一事件交由状态机来处理
+- 在 send_heartbeat_all 中增加对于 next_index 被 leader 的 snapshot 包含的情况处理，发生这种情况该发送 `install snapshot` RPC
+- 添加 `install snapshot` RPC 的发送方参数设置逻辑，以及接收方的处理逻辑
+
+另外还需要说明的是，`KvServer` 结构中并不包含 persister，也就是说 `KvServer` 每次检查 persister 的日志数据量
+的大小都必须通过 Raft 来获得，为了并发安全，Raft 由状态机独占，如果把数据量查询也设计为发送消息并返回的方式显然是不
+太合理的，所以实际实现的时候，我又设置了一个共享所有权的原子量记录数据量。
+
+但是原子量仅仅保证自己的原子更新，不能保证 persister 的实际数据量的改变和原子量的改变不是同步的，就会导致实际上 persister 的
+数量已经超过阈值但是读取原子值尚未超过，所以实现的时候将阈值设置为了给定阈值的 60%。
