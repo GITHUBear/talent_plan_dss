@@ -5,8 +5,7 @@
 1. 目前未实现优雅地停机
 2. 不优雅的停机导致通道发送与接收会出现彼端已经销毁的错误，对于这些错误的处理
 也不够优雅，基本就是 `unwrap_or_else` 对错误进行忽略
-3. 部分文件的注释还是中文(将 raft/mod.rs 注释改成英文后，其他就没有修改)
-4. 由于停机不优雅，导致 3a 部分 `linearizability` 的一个测试有较低概率在
+3. 由于停机不优雅，导致 3a 部分 `linearizability` 的一个测试有较低概率在
 如下代码处出现 unwrap err(kvraft/tests.rs:549)：
 
     ```rust
@@ -17,7 +16,7 @@
 drop，销毁 cfg，使之调用 KvServer 的 kill 方法来结束状态机，之后测试基本
 不再出现这种情况。
 
-5. 框架代码自身还有问题，在 labrpc 的测试中，`test_killed` 不能稳定通过，错误
+4. 框架代码自身还有问题，在 labrpc 的测试中，`test_killed` 不能稳定通过，错误
 如下图所示，个人觉得这不是什么大问题：
 
 ![labrpc_error](./error.jpg)

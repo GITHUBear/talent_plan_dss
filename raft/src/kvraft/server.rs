@@ -28,18 +28,21 @@ pub struct KvServer {
     // snapshot if log grows this big
     maxraftstate: Option<usize>,
     // Your definitions here.
-    // 简易数据库
+    // simple database
     db: HashMap<String, String>,
-    // 保存一个 client 名到该客户端提交的操作的最大序列号的映射
-    // 避免一个序列号的操作被 client 反复提交
+    // Saves a mapping of client name to the maximum sequence number
+    // of operations submitted by the client.
+    // Avoid a serial number operation being repeatedly submitted by the client.
     client_seq_map: HashMap<String, u64>,
-    // 保存一个 操作日志索引 到 (相应操作请求的结果发送端,term,client name,client seq,操作方式) 的映射
-    // 用于防止 get 和 put_append 方法的阻塞
+    // Save a mapping of the operation log index to
+    // (the result sender of the corresponding operation request, term,
+    // client name, client seq, operation mode)
+    // Used to prevent blocking of get and put_append methods.
     log_index_channel_map: HashMap<u64, (Sender<Reply>, u64, String, u64, u64)>,
-    // 传输 客户端调用事件 的发送端和接收端
+    // The sender and receiver of the client invocation event.
     msg_rx: UnboundedReceiver<ActionEv>,
     msg_tx: UnboundedSender<ActionEv>,
-    // 接收来自下层的 Raft 发送来的 已经成功提交的日志
+    // Committed logs or snapshot from Raft
     apply_ch: UnboundedReceiver<ApplyMsg>,
 }
 
@@ -78,7 +81,7 @@ impl KvServer {
 }
 
 impl KvServer {
-    /// 创建 snapshot，保存 db 和 client_seq_map 的数据
+    /// Create a snapshot and save the data for `db` and `client_seq_map`
     fn create_snapshot(&self) -> Vec<u8> {
         let mut data = vec![];
         let snapshot = Snapshot {
@@ -92,13 +95,13 @@ impl KvServer {
         data
     }
 
-    /// 判断是否需要进行 snapshot
+    /// Determine if snapshot is needed.
     ///
-    /// applied_index 保存了本次 snapshot 的最后一个日志索引
+    /// `applied_index` holds the last log index of this snapshot
     fn need_snapshot(&self, applied_index: u64) {
         if let Some(limit) = self.maxraftstate {
             if self.rf.persist_size() < (limit * 6 / 10) as u64 {
-                // 小于最大阈值的 80%，不进行 snapshot
+                // Less than 80% of the maximum threshold, no snapshot.
                 return;
             }
             let snapshot = self.create_snapshot();
@@ -106,7 +109,7 @@ impl KvServer {
         }
     }
 
-    // 在创建 KvServer 之初，通过 snapshot 恢复状态
+    // When creating KvServer, restore state with snapshot.
     fn read_snapshot_from_raw(&mut self, raw: &[u8]) {
         if raw.is_empty() {
             return;
@@ -143,7 +146,7 @@ impl Stream for KvServerFuture {
     type Error = ();
 
     fn poll(&mut self) -> Poll<Option<()>, ()> {
-        // 客户端调用事件
+        // Client invocation event.
         match self.server.msg_rx.poll() {
             Ok(Async::Ready(Some(e))) => {
                 match e {
@@ -157,21 +160,22 @@ impl Stream for KvServerFuture {
                         };
                         match self.server.rf.start(&cmd) {
                             Ok((index, term)) => {
-                                // 成功将 command 送入 raft
+                                // Successfully sent command to raft.
                                 info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
-                                // 保存 发送端
+                                // Save sender.
                                 self.server
                                     .log_index_channel_map
                                     .insert(index, (tx, term, args.name.clone(), args.seq, 0));
                             }
                             Err(_) => {
-                                // 不是 leader, 立即发送 Reply
+                                // Not a leader, send a reply immediately.
                                 let reply = GetReply {
                                     wrong_leader: true,
                                     err: "Wrong Leader".to_owned(),
                                     value: "".to_owned(),
                                 };
-                                // 防止超时的客户端请求会drop掉接收端，导致出错
+                                // Prevent timeout client requests from
+                                // dropping the receiving end and causing errors.
                                 if !tx.is_canceled() {
                                     info!(
                                         "[Server {}] Tell {} : I am not a leader ",
@@ -195,20 +199,21 @@ impl Stream for KvServerFuture {
                         };
                         match self.server.rf.start(&cmd) {
                             Ok((index, term)) => {
-                                // 成功将 command 送入 raft
+                                // Successfully sent command to raft.
                                 info!("[Server {}] cmd: {:?} start", self.server.me, &cmd);
-                                // 保存 发送端
+                                // Save sender.
                                 self.server
                                     .log_index_channel_map
                                     .insert(index, (tx, term, args.name.clone(), args.seq, 1));
                             }
                             Err(_) => {
-                                // 不是 leader, 立即发送 Reply
+                                // Not a leader, send a reply immediately.
                                 let reply = PutAppendReply {
                                     wrong_leader: true,
                                     err: "Wrong Leader".to_owned(),
                                 };
-                                // 防止超时的客户端请求会drop掉接收端，导致出错
+                                // Prevent timeout client requests from
+                                // dropping the receiving end and causing errors.
                                 if !tx.is_canceled() {
                                     info!(
                                         "[Server {}] Tell {} : I am not a leader ",
@@ -237,10 +242,10 @@ impl Stream for KvServerFuture {
             Ok(Async::NotReady) => {}
             Err(_) => unreachable!(),
         }
-        // apply_ch 到达事件
+        // apply_ch arrival event.
         match self.server.apply_ch.poll() {
             Ok(Async::Ready(Some(apply_msg))) => {
-                // 先检查 apply_msg 是否是一个 snapshot
+                // First check if apply_msg is a snapshot.
                 if !apply_msg.command_valid {
                     self.server.read_snapshot_from_raw(&apply_msg.command);
                 } else if let Ok(cmd) = labcodec::decode(&apply_msg.command) {
@@ -250,7 +255,7 @@ impl Stream for KvServerFuture {
                             // Get
                             let seq = self.server.client_seq_map.get(&cmd.name).unwrap_or(&0);
                             if cmd.seq > *seq {
-                                // 更新seq
+                                // Update seq.
                                 self.server.client_seq_map.insert(cmd.name.clone(), cmd.seq);
                             }
                             if let Some((sender, term, name, seq, op)) = self
@@ -262,9 +267,9 @@ impl Stream for KvServerFuture {
                                     && cmd.name.eq(&name)
                                     && cmd.seq == seq
                                 {
-                                    // 说明日志已经提交
+                                    // The log has been committed.
                                     if !sender.is_canceled() {
-                                        // 发送包含结果的 reply
+                                        // Send a reply with the result.
                                         let reply = GetReply {
                                             wrong_leader: false,
                                             err: "".to_owned(),
@@ -283,9 +288,9 @@ impl Stream for KvServerFuture {
                                         });
                                     }
                                 } else {
-                                    // 说明失去领导地位
+                                    // the loss of leadership.
                                     if !sender.is_canceled() {
-                                        // 发送丢失领导地位的 error reply
+                                        // Send error reply with the reason of missing leadership.
                                         if op == 0 {
                                             let reply = GetReply {
                                                 wrong_leader: true,
@@ -320,7 +325,7 @@ impl Stream for KvServerFuture {
                             // Put & Append
                             let seq = self.server.client_seq_map.get(&cmd.name).unwrap_or(&0);
                             if cmd.seq > *seq {
-                                // 更新数据库
+                                // Update database.
                                 if cmd.op == 1 {
                                     self.server.db.insert(cmd.key.clone(), cmd.value.clone());
                                 } else {
@@ -331,7 +336,7 @@ impl Stream for KvServerFuture {
                                         .or_insert_with(|| "".to_owned());
                                     old_val.push_str(&*(cmd.value.clone()));
                                 }
-                                // 更新seq
+                                // Update seq.
                                 self.server.client_seq_map.insert(cmd.name.clone(), cmd.seq);
                             }
                             if let Some((sender, term, name, seq, op)) = self
@@ -343,9 +348,9 @@ impl Stream for KvServerFuture {
                                     && cmd.name.eq(&name)
                                     && cmd.seq == seq
                                 {
-                                    // 说明日志已经提交
+                                    // The log has been committed.
                                     if !sender.is_canceled() {
-                                        // 发送包含结果的 reply
+                                        // Send a reply with the result.
                                         let reply = PutAppendReply {
                                             wrong_leader: false,
                                             err: "".to_owned(),
@@ -358,9 +363,9 @@ impl Stream for KvServerFuture {
                                         });
                                     }
                                 } else {
-                                    // 说明失去领导地位
+                                    // the loss of leadership.
                                     if !sender.is_canceled() {
-                                        // 发送丢失领导地位的 error reply
+                                        // Send error reply with the reason of missing leadership.
                                         if op == 0 {
                                             let reply = GetReply {
                                                 wrong_leader: true,
@@ -393,7 +398,7 @@ impl Stream for KvServerFuture {
                         }
                         _ => unreachable!(),
                     }
-                    // 检查是否需要 snapshot
+                    // Check if snapshot is needed.
                     self.server.need_snapshot(apply_msg.command_index);
                 }
             }

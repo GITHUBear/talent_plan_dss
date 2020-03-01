@@ -13,9 +13,14 @@ pub struct Clerk {
     pub name: String,
     pub servers: Vec<KvClient>,
     // You will have to modify this struct.
-    // get 和 put_append 的接口为 &self, 需要获得内部可变性
-    pub ex_leader: AtomicU64, // 保存前一次成功得到 RPC 应答的 server id
-    pub seq: AtomicU64, // 保存提交到服务端的请求的序列号，防止在同一个服务端提交多次同一个请求
+    // The interface of get and put_append uses `&self`,
+    // so we need to obtain internal mutability
+
+    // Save the server id of the last successful RPC response
+    pub ex_leader: AtomicU64,
+    // Stores the serial number of the request submitted to the server
+    // to prevent the same request from being submitted multiple times on the same server
+    pub seq: AtomicU64,
 }
 
 impl fmt::Debug for Clerk {
@@ -55,16 +60,17 @@ impl Clerk {
         loop {
             if let Ok(reply) = self.servers[idx as usize].get(&args).wait() {
                 if !reply.wrong_leader {
-                    // 说明在消息发送到服务端时该节点还是 leader
+                    // Indicate that the node is still the leader
+                    // when the message is sent to the server
                     if reply.err.is_empty() {
-                        // 在完成 commit 期间始终保持 leader 状态
+                        // Stay leader during commit
                         self.ex_leader.store(idx, Ordering::SeqCst);
                         return reply.value;
                     }
-                    // 发生 leader 转移
+                    // lose leadership
                 }
             }
-            // 否则说明 can't reach, 尝试下一个
+            // Otherwise, can't reach, try the next
             idx = (idx + 1) % (group_num as u64);
         }
     }
@@ -97,13 +103,14 @@ impl Clerk {
         loop {
             if let Ok(reply) = self.servers[idx as usize].put_append(&args).wait() {
                 if !reply.wrong_leader {
-                    // 说明在消息发送到服务端时该节点还是 leader
+                    // Indicate that the node is still the leader
+                    // when the message is sent to the server.
                     if reply.err.is_empty() {
-                        // 在完成 commit 期间始终保持 leader 状态
+                        // Stay leader during commit.
                         self.ex_leader.store(idx, Ordering::SeqCst);
                         return;
                     }
-                    // 发生 leader 转移
+                    // lose leadership
                 }
             }
 
