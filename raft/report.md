@@ -527,7 +527,7 @@ pub struct KvServer {
 #### 服务器端处理超时
 
 可以想到如果将超时处理放到 `KvServer` 的状态机中进行处理，会带来很多实现上的困难，所以在实际实现的时候，采用了在
-RPC 调用方法中返回了一个带超时 Delay 的 Future。
+RPC 调用方法中添加一个 Delay Future。
 
 具体实现代码如下：
 
